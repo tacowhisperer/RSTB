@@ -106,33 +106,99 @@ function ButtonState (bgTweener, txtTweener, frameGenerator) {
  *
  * Arguments:
  *     none
+ *
+ * Public Methods:
+ *     addAnimation - [opts] <See the method for necessary details.> (this Animator object)
  */
 function Animator () {
-    var isActive = false,
-        animations = [];
+    	// Used to keep track of animations
+    var animations = {},
+
+        // Indexing values for arrays inside of the animations array
+        I                = -1,
+        IS_ACTIVE        = ++I,
+        ANIM_DIRECTION   = ++I,
+        START_VALUE      = ++I,
+        END_VALUE        = ++I,
+        NUM_FRAMES       = ++I,
+        INTERPOLATOR     = ++I,
+        UPDATER          = ++I,
+        INTERPOL_TRANS   = ++I,
+        UPDATE_ARGS      = ++I,
+        INTERPOL_RET_VAL = ++I;
 
     /**
      * Argument Object Required Key-Value Pairs:
-     *     startValue        - Starting value of the data to be animated
-     *     endValue          - Ending value of the data to be animated
-     *     numFrames         - Number of frames (normalized to 60fps) that the animation should last
-     *     interpolator      - Function that interpolates the starting and ending values. Its arguments
-     *                         are in the following order: startValue, endValue, p where p is in [0, 1]
-     *     updater           - Function called every time the animator is done calculating frame values
-     *                         and is currently animating. Uses the arguments provided in the updaterArgs
-     *                         array (if provided), along with the last argument being the return value
-     *                         of the interpolator function (not to be confused with the interpolation
-     *                         transform).
+     *     animationName      - String of the name of the animation
+     *     startValue         - Starting value of the data to be animated
+     *     endValue           - Ending value of the data to be animated
+     *     numFrames          - Number of frames (normalized to 60fps) that the animation should last
+     *     interpolator       - Function that interpolates the starting and ending values. Its arguments
+     *                          are in the following order: startValue, endValue, p where p is in [0, 1]
+     *     updater            - Function called every time the animator is done calculating frame values
+     *                          and is currently animating. Uses the arguments provided in the updaterArgs
+     *                          array (if provided), along with the last argument being the return value
+     *                          of the interpolator function (not to be confused with the interpolation
+     *                          transform).
      *
      * Argument Object Optional Key-Value Pairs:
-     *     interpolTransform - Function that transforms the p argument of the interpolator to another 
-     *                         value in [0, 1]. Example: function (v) {return 1 - Math.sqrt (1 - v * v);}
-     *     updateArgs        - Array that will hold all of the arguments to be fed to the updater function.
-     *                         Return value from the interpolator function is appended to the end of this
-     *                         array.
+     *     interpolTransform  - Function that transforms the p argument of the interpolator to another 
+     *                          value in [0, 1]. Example: function (v) {return 1 - Math.sqrt (1 - v * v);}
+     *     updateArgs         - Array that will hold all of the arguments to be fed to the updater function.
+     *                          Return value from the interpolator function is appended to the end of this
+     *                          array.
+     *     isActive           - True if the animation should be updating, false otherwise. Defaults to true.
+     *     animationDirection - True if the animation should be positive (0 -> 1), false otherwise (1 -> 0).
+     *                          Defaults to true.
      */
     this.addAnimation = function (opts) {
+    	var iA = typeof opts.isActive == 'boolean'? opts.isActive : true,
+    		aD = typeof opts.animationDirection == 'boolean'? opts.animationDirection : true,
+    	    sV = opts.startValue,
+    		eV = opts.endValue,
+    		nF = opts.numFrames,
+    		ip = opts.interpolator,
+    		up = opts.updater,
+    		iT = opts.interpolTransform || function (v) {return v;},
+    		uA = opts.updateArgs;
+    		
+    	// Create a new reference for the updater arguments and append a spot for the output of the interpolator function
+    	uA = uA? (function (a) {var c = []; for (var i = 0; i < a.length; i++) {c.push (a[i])} return c;})(uA) : [];
+    	uA.push (null);
 
+    	// Store the animation in the animation object
+    	animations[opts.animationName] = [iA, aD, sV, eV, nF, ip, up, iT, uA];
+
+    	return this;
+    };
+
+    // Removes an animation from the animations object.
+    this.removeAnimation = function (animationName) {
+    	if (animations[animationName]) delete animations[animationName];
+
+    	return this;
+    };
+
+    // Begins the animator's update loop
+    this.play = function () {
+    	return this;
+    };
+
+    // Pauses the animator's update loop
+    this.pause = function () {
+    	return this;
+    };
+
+    // Enables the specified animation to be updated in the animator's update loop. Does nothing
+    // if the animation is not found in the animations object.
+    this.playAnimation = function (animationName) {
+    	return this;
+    };
+
+    // Disables the specified animation from being updated in the animator's update loop. Does
+    // nothing if the animation is not found in the animations object.
+    this.pauseAnimation = function (animationName) {
+    	return this;
     };
 }
 
