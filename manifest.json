@@ -1,0 +1,28 @@
+{
+    "manifest_version": 2,
+    "name": "Minimal Reddit Sidebar Toggler",
+    "version": "0.1",
+    "version_name": "1.0 beta",
+
+    "description": "Adds a minimally intrusive button on the page that can toggle the sidebar for a more pleasant experience on a smaller window.",
+    "icons": {
+        "16": "16.png",
+        "32": "32.png",
+        "48": "48.png",
+        "64": "64.png",
+        "128": "128.png"
+    },
+
+    "author": "Andres Salgado",
+    "content_scripts": [
+        {
+            "matches": [
+                "*://reddit.com/*",
+                "*://*.reddit.com/*"
+            ],
+
+            "js": ["script.js"],
+            "run_at": "document_end"
+        }
+    ]
+}
