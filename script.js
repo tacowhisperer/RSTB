@@ -66,6 +66,18 @@ var BG_RGB             = [255, 255, 255],
         'z-index':             Number.MAX_SAFE_INTEGER || 509031400070006
     };
 
+// Create the button and style it
+var cTSB = document.createElement ('p');
+cTSB.id = 'customToggleSideButton';
+cTSB.innerHTML = 'Hide';
+for (var prop in css) {
+    if (css.hasOwnProperty (prop)) cTSB.style[prop] = css[prop];
+}
+
+// Add the new button to the DOM and create a new reference to it
+document.body.appendChild (cTSB);
+var button = document.getElementById (cTSB.id);
+
 /**
  * Wrapper for animation states for a button.
  *
