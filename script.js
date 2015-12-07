@@ -111,35 +111,59 @@ function ButtonState (bgTweener, txtTweener, frameGenerator) {
  *     addAnimation - [opts] <See the method for necessary details.> (this Animator object)
  */
 function Animator () {
-    	// Used to keep track of animations
+        // Used to keep track of animations
     var animations = {},
 
         // Indexing values for arrays inside of the animations array
-        I                = -1,
-        IS_ACTIVE        = ++I,
-        ANIM_DIRECTION   = ++I,
-        START_VALUE      = ++I,
-        END_VALUE        = ++I,
-        NUM_FRAMES       = ++I,
-        INTERPOLATOR     = ++I,
-        UPDATER          = ++I,
-        INTERPOL_TRANS   = ++I,
-        UPDATE_ARGS      = ++I,
-        INTERPOL_RET_VAL = ++I;
+        I               = -1,
+        IS_ACTIVE       = ++I,
+        ANIM_DIRECTION  = ++I,
+        START_VALUE     = ++I,
+        END_VALUE       = ++I,
+        NUM_FRAMES      = ++I,
+        INTERPOLATOR    = ++I,
+        UPDATER         = ++I,
+        INTERPOL_TRANS  = ++I,
+        UPDATE_ARGS     = ++I,
+        FRAME_GENERATOR = ++I,
+        STARTED_FRM_GEN = ++I, // Used to determine if frame generator needs to be started or not
+
+        // Used for keeping track of the internal loop
+        loopAnimation = false;
+
+    // Internal looping function. Must run this.play to start and this.pause to stop
+    function animatorLoop () {
+        for (var animation in animations) {if (animations.hasOwnProperty (animation)) {
+            var anim = animations[animation];
+
+            // Only update values if the animation if active
+            if (anim[IS_ACTIVE]) {
+                if (!anim[STARTED_FRM_GEN]) {
+                    anim[FRAME_GENERATOR].start ();
+                    anim[STARTED_FRM_GEN] = true;
+                }
+
+                var i = anim[FRAME_GENERATOR].frame ();
+            }
+        }}
+
+        // Only loop if the loopAnimation variable is not false
+        if (loopAnimation) loopAnimation = requestAnimationFrame (animatorLoop);
+    }
 
     /**
      * Argument Object Required Key-Value Pairs:
-     *     animationName      - String of the name of the animation
-     *     startValue         - Starting value of the data to be animated
-     *     endValue           - Ending value of the data to be animated
-     *     numFrames          - Number of frames (normalized to 60fps) that the animation should last
-     *     interpolator       - Function that interpolates the starting and ending values. Its arguments
-     *                          are in the following order: startValue, endValue, p where p is in [0, 1]
-     *     updater            - Function called every time the animator is done calculating frame values
-     *                          and is currently animating. Uses the arguments provided in the updaterArgs
-     *                          array (if provided), along with the last argument being the return value
-     *                          of the interpolator function (not to be confused with the interpolation
-     *                          transform).
+     *     animationName - String of the name of the animation
+     *     startValue    - Starting value of the data to be animated
+     *     endValue      - Ending value of the data to be animated
+     *     numFrames     - Number of frames (normalized to 60fps) that the animation should last
+     *     interpolator  - Function that interpolates the starting and ending values. Its arguments
+     *                     are in the following order: startValue, endValue, p where p is in [0, 1]
+     *     updater       - Function called every time the animator is done calculating frame values
+     *                     and is currently animating. Uses the arguments provided in the updaterArgs
+     *                     array (if provided), along with the last argument being the return value
+     *                     of the interpolator function (not to be confused with the interpolation
+     *                     transform).
      *
      * Argument Object Optional Key-Value Pairs:
      *     interpolTransform  - Function that transforms the p argument of the interpolator to another 
@@ -152,53 +176,83 @@ function Animator () {
      *                          Defaults to true.
      */
     this.addAnimation = function (opts) {
-    	var iA = typeof opts.isActive == 'boolean'? opts.isActive : true,
-    		aD = typeof opts.animationDirection == 'boolean'? opts.animationDirection : true,
-    	    sV = opts.startValue,
-    		eV = opts.endValue,
-    		nF = opts.numFrames,
-    		ip = opts.interpolator,
-    		up = opts.updater,
-    		iT = opts.interpolTransform || function (v) {return v;},
-    		uA = opts.updateArgs;
-    		
-    	// Create a new reference for the updater arguments and append a spot for the output of the interpolator function
-    	uA = uA? (function (a) {var c = []; for (var i = 0; i < a.length; i++) {c.push (a[i])} return c;})(uA) : [];
-    	uA.push (null);
+        var iA = typeof opts.isActive == 'boolean'? opts.isActive : true,
+            aD = typeof opts.animationDirection == 'boolean'? opts.animationDirection : true,
+            sV = opts.startValue,
+            eV = opts.endValue,
+            nF = opts.numFrames,
+            ip = opts.interpolator,
+            up = opts.updater,
+            iT = opts.interpolTransform || function (v) {return v;},
+            uA = opts.updateArgs,
+            fG = new FrameGenerator (nF),
 
-    	// Store the animation in the animation object
-    	animations[opts.animationName] = [iA, aD, sV, eV, nF, ip, up, iT, uA];
+            // Used for determining if the frame generator should be started
+            FRAME_GENERATOR_STARTED = false;
+            
+        // Create a new reference for the updater arguments and append a spot for the output of the interpolator function
+        uA = uA? (function (a) {var c = []; for (var i = 0; i < a.length; i++) {c.push (a[i])} return c;})(uA) : [];
+        uA.push (null);
 
-    	return this;
+        // Store the animation in the animation object
+        animations[opts.animationName] = [iA, aD, sV, eV, nF, ip, up, iT, uA, fG, FRAME_GENERATOR_STARTED];
+
+        return this;
     };
 
     // Removes an animation from the animations object.
     this.removeAnimation = function (animationName) {
-    	if (animations[animationName]) delete animations[animationName];
+        if (animations[animationName]) delete animations[animationName];
 
-    	return this;
+        return this;
     };
 
     // Begins the animator's update loop
     this.play = function () {
-    	return this;
+        if (!loopAnimation) loopAnimation = requestAnimationFrame (animatorLoop);
+        return this;
     };
 
     // Pauses the animator's update loop
     this.pause = function () {
-    	return this;
+        if (loopAnimation) {
+            cancelAnimationFrame (loopAnimation);
+            loopAnimation = false;
+        }
+
+        return this;
     };
 
     // Enables the specified animation to be updated in the animator's update loop. Does nothing
     // if the animation is not found in the animations object.
     this.playAnimation = function (animationName) {
-    	return this;
+        if (animations[animationName]) animations[animationName][IS_ACTIVE] = true;
+        
+        return this;
     };
 
     // Disables the specified animation from being updated in the animator's update loop. Does
     // nothing if the animation is not found in the animations object.
     this.pauseAnimation = function (animationName) {
-    	return this;
+        if (animations[animationName]) animations[animationName][IS_ACTIVE] = false;
+        
+        return this;
+    };
+
+    // Makes the specified animation's direction positive. Does nothing if the animation is not
+    // found in the animations object.
+    this.setAnimationForward = function (animationName) {
+        if (animations[animationName]) animations[animationName][ANIM_DIRECTION] = true;
+        
+        return this;
+    };
+
+    // Makes the specified animation's direction negative. Does nothing if the animation is not
+    // found in the animations object
+    this.setAnimationBackward = function (animationName) {
+        if (animations[animationName]) animations[animationName][ANIM_DIRECTION] = false;
+        
+        return this;
     };
 }
 
@@ -219,6 +273,9 @@ function FrameGenerator (numFrames) {
     var n = numFrames,
         t_i = new Date ().getTime (),
         i_t = 0,
+        offset = 0,         // Offsets new values of time by the amount of time paused
+        isNotPaused = true,
+        tPaused = t_i,      // Used to store the time when paused
         FPMS = 3 / 50;
 
     // Starts the internal clock
@@ -228,25 +285,50 @@ function FrameGenerator (numFrames) {
         return this;
     };
 
-    // Resets the timer and frame counter
+    // Resets the frame counter
     this.reset = function () {
-        t_i = new Date ().getTime ();
         i_t = 0;
+
+        return this;
+    };
+
+    // Pauses the FrameGenerator such that calling next on it will not change the value of the frame
+    this.pause = function () {
+        if (isNotPaused) {
+            tPaused = t_i;
+            isNotPaused = false;
+        }
+
+        return this;
+    };
+
+    // Unpauses the FrameGenerator
+    this.unpause = function () {
+        if (!isNotPaused) {
+            // t_i = new Date ().getTime ();
+            offset += (new Date () - tPaused);
+
+            console.log ('offset: ' + offset);
+
+            isNotPaused = true;
+        }
 
         return this;
     };
 
     // Generates the next value for i_t. Counts backward if !!neg === true
     this.next = function (neg) {
-        var dt = (new Date ().getTime () - t_i) * (neg? -1 : 1);
-        i_t = rk4 (i_t, FPMS, dt, function () {return 0;})[0];
+        if (isNotPaused) {
+            var dt = (new Date ().getTime () - t_i - offset) * (neg? -1 : 1);
+            i_t = rk4 (i_t, FPMS, dt, function () {return 0;})[0];
 
-        // Does a bound check on the new value of i_t
-        if (i_t < 0) i_t = 0;
-        else if (i_t > n) i_t = n;
+            // Does a bound check on the new value of i_t
+            if (i_t < 0) i_t = 0;
+            else if (i_t > n) i_t = n;
 
-        // Sets the new t_i value for the next call
-        t_i = new Date ().getTime ();
+            // Sets the new t_i value for the next call
+            t_i = new Date ().getTime () - offset;
+        }
 
         return this;
     };
