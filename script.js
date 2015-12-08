@@ -71,30 +71,12 @@ var cTSB = document.createElement ('p');
 cTSB.id = 'customToggleSideButton';
 cTSB.innerHTML = 'Hide';
 for (var prop in css) {
-    if (css.hasOwnProperty (prop)) cTSB.style[prop] = css[prop];
+    cTSB.style[prop] = css[prop];
 }
 
 // Add the new button to the DOM and create a new reference to it
 document.body.appendChild (cTSB);
 var button = document.getElementById (cTSB.id);
-
-/**
- * Wrapper for animation states for a button.
- *
- * Public Members:
- *     isPos - <Describes whether animation is positive or is negative> (Boolean)
- *     isAn  - <Describes whether the button is currently animating> (Boolean)
- *     bgT   - <Reference to the fed background color tweener> (AlphaColorTweener Object)
- *     txtT  - <Reference to the fed text color tweener> (AlphaColorTweener Object)
- *     fGen  - <Reference to the fed frame generator> (Frame Generator Object)
- */
-function ButtonState (bgTweener, txtTweener, frameGenerator) {
-    this.isPos = true;
-    this.isAn  = false;
-    this.bgT   = bgTweener;
-    this.txtT  = txtTweener;
-    this.fGen  = frameGenerator;
-}
 
 /**
  * Generic animator that animates from one state to another state based on the interpolating
@@ -107,9 +89,12 @@ function ButtonState (bgTweener, txtTweener, frameGenerator) {
  * Arguments:
  *     none
  *
+ * TODO: ADD START METHOD TO ANIMATOR
+ *
  * Public Methods:
  *     addAnimation                  - [opts] <See the method for necessary details> (this obj)
  *     removeAnimation               - [animation] <Removes the animation from the animator> (this obj)
+ *     start                         - [] <Starts the animator main loop> (this obj)
  *     play                          - [immediatelyReplay] <Reenables the main loop and plays animations in fed array> (this obj)
  *     pause                         - [] <Disables the main loop and pauses all animations> (this obj)
  *     playAnimation                 - [animation] <Allows the main loop to play the specified animation> (this obj)
@@ -135,11 +120,12 @@ function Animator () {
         FRAME_GENERATOR = ++I,
 
         // Used for keeping track of the internal loop
+        animIsStarted = false,
         loopAnimation = false;
 
     // Internal looping function. Must run this.play to start and this.pause to stop
     function animatorLoop () {
-        for (var animation in animations) {if (animations.hasOwnProperty (animation)) {
+        for (var animation in animations) {y
             var a = animations[animation], fG = a[FRAME_GENERATOR];
 
             // Only update values if the animation if not paused
@@ -158,10 +144,20 @@ function Animator () {
                 // Clear the interpolated value as it is no longer necessary
                 uA[uA.length - 1] = null;
             }
-        }}
+        }
 
         // Only loop if the loopAnimation variable is not false
         if (loopAnimation) loopAnimation = requestAnimationFrame (animatorLoop);
+    }
+
+    // Starts the animator loop
+    this.start = function () {
+        if (!loopAnimation && !animIsStarted) {
+            animIsStarted = true;
+            loopAnimation = requestAnimationFrame (animatorLoop);
+        }
+
+        return this;
     }
 
     /**
@@ -232,9 +228,9 @@ function Animator () {
     this.pause = function () {
         if (loopAnimation) {
             // Pause all frame generators
-            for (var animation in animations) {if (animations.hasOwnProperty (animation)) {
+            for (var animation in animations) {
                 animations[animation][FRAME_GENERATOR].pause ();
-            }}
+            }
 
             cancelAnimationFrame (loopAnimation);
             loopAnimation = false;
@@ -299,6 +295,7 @@ function Animator () {
         var ret = [];
         for (var i = 0; i < arra.length; i++) ret.push (array[i]);
         ret.push (null);
+
         return ret;
     }
 }
@@ -427,34 +424,6 @@ function FrameGenerator (numFrames) {
     };
 }
 
-/*
-Frame Generator Test Code:
-    var x = 0, fG = new FrameGenerator (6000);
-    (function frameGeneratorEndlessLoop () {
-        if (x > 0) {
-            console.log (fG.next().frame());
-        } else {
-            console.log (fG.start().frame());
-        }
-
-        x++;
-        setTimeout (frameGeneratorEndlessLoop, 1000);
-    })()
-
-    function pause () {
-        fG.pause();
-    }
-
-    function unpause () {
-        fG.unpause();
-    }
-
-    function reset () {
-        x = 0;
-        fG.reset();
-    }
-*/
-
 /**
  * RGBA Color Tweener that linearly interpolates the starting and the ending color through 
  * the CIE-L*ab color space.
@@ -560,3 +529,66 @@ function AlphaColorTweener (sRGB, eRGB, sAlf, eAlf, num) {
 }
 
 }})();
+
+/*
+Frame Generator Test Code:
+
+var x = 0, fG = new FrameGenerator (6000);
+(function frameGeneratorEndlessLoop () {
+    if (x > 0) {
+        console.log (fG.next().frame());
+    } else {
+        console.log (fG.start().frame());
+    }
+
+    x++;
+    setTimeout (frameGeneratorEndlessLoop, 1000);
+})()
+
+function pause () {
+    fG.pause();
+}
+
+function unpause () {
+    fG.unpause();
+}
+
+function reset () {
+    x = 0;
+    fG.reset();
+}
+*/
+
+/*
+Animator Test Code:
+
+var animator = new Animator (),
+    
+    animation0 = {
+        animationName: 'Test 1',
+        startValue: 0,
+        endValue: 1,
+        numFrames: 600,
+        interpolator: function (a, b, p) {
+            return (1 - p) * a + p * b;
+        },
+        updater: function (v) {
+            console.log ('Test 1: ' + v);
+        }
+    },
+
+    animation1 = {
+        animationName: 'Test 2',
+        startValue: 1,
+        endValue: 0,
+        numFrames: 6000,
+        interpolator: function (a, b, p) {
+            return (1 - p) * a + p * b;
+        },
+        updater: function (v) {
+            console.log ('Test 2: ' + v);
+        }
+    };
+
+animator.addAnimation (animation0).addAnimation (animation1).start ();
+*/
