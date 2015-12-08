@@ -108,7 +108,16 @@ function ButtonState (bgTweener, txtTweener, frameGenerator) {
  *     none
  *
  * Public Methods:
- *     addAnimation - [opts] <See the method for necessary details.> (this Animator object)
+ *     addAnimation                  - [opts] <See the method for necessary details> (this obj)
+ *     removeAnimation               - [animation] <Removes the animation from the animator> (this obj)
+ *     play                          - [immediatelyReplay] <Reenables the main loop and plays animations in fed array> (this obj)
+ *     pause                         - [] <Disables the main loop and pauses all animations> (this obj)
+ *     playAnimation                 - [animation] <Allows the main loop to play the specified animation> (this obj)
+ *     pauseAnimation                - [animation] <Disables the main loop from playing the specified animation> (this obj)
+ *     setAnimationForward           - [animation] <Makes the specified animation animate positively [0 -> 1]> (this obj)
+ *     setAnimationBackward          - [animation] <Makes the specified animation animate negatively [1 -> 0]> (this obj)
+ *     updateAnimationUpdateArgs     - [animation, updateArgs] <Updates the animation's updateArgs array> (this obj)
+ *     updateAnimationUpdateFunction - [animation, updateFunc] <Updates the animation's update function> (this obj)
  */
 function Animator () {
         // Used to keep track of animations
@@ -116,17 +125,14 @@ function Animator () {
 
         // Indexing values for arrays inside of the animations array
         I               = -1,
-        IS_ACTIVE       = ++I,
         ANIM_DIRECTION  = ++I,
         START_VALUE     = ++I,
         END_VALUE       = ++I,
-        NUM_FRAMES      = ++I,
         INTERPOLATOR    = ++I,
         UPDATER         = ++I,
         INTERPOL_TRANS  = ++I,
         UPDATE_ARGS     = ++I,
         FRAME_GENERATOR = ++I,
-        STARTED_FRM_GEN = ++I, // Used to determine if frame generator needs to be started or not
 
         // Used for keeping track of the internal loop
         loopAnimation = false;
@@ -134,16 +140,23 @@ function Animator () {
     // Internal looping function. Must run this.play to start and this.pause to stop
     function animatorLoop () {
         for (var animation in animations) {if (animations.hasOwnProperty (animation)) {
-            var anim = animations[animation];
+            var a = animations[animation], fG = a[FRAME_GENERATOR];
 
-            // Only update values if the animation if active
-            if (anim[IS_ACTIVE]) {
-                if (!anim[STARTED_FRM_GEN]) {
-                    anim[FRAME_GENERATOR].start ();
-                    anim[STARTED_FRM_GEN] = true;
+            // Only update values if the animation if not paused
+            if (!fG.isPaused ()) {
+                if (!fG.isStarted ()) {
+                    fG.start ();
                 }
 
-                var i = anim[FRAME_GENERATOR].frame ();
+                // Stores the interpolated value in the last entry of the UPDATE_ARGS array
+                var uA = a[UPDATE_ARGS], i = fG.next (a[ANIM_DIRECTION]).frame ();
+                uA[uA.length - 1] = a[INTERPOLATOR](a[START_VALUE], a[END_VALUE], a[INTERPOL_TRANS](i));
+
+                // Call the updator to do whatever it needs to do
+                a[UPDATER].apply (a[UPDATER], uA);
+
+                // Clear the interpolated value as it is no longer necessary
+                uA[uA.length - 1] = null;
             }
         }}
 
@@ -171,7 +184,7 @@ function Animator () {
      *     updateArgs         - Array that will hold all of the arguments to be fed to the updater function.
      *                          Return value from the interpolator function is appended to the end of this
      *                          array.
-     *     isActive           - True if the animation should be updating, false otherwise. Defaults to true.
+     *     isActive           - True if the animation should be running, false otherwise. Defaults to true.
      *     animationDirection - True if the animation should be positive (0 -> 1), false otherwise (1 -> 0).
      *                          Defaults to true.
      */
@@ -180,22 +193,20 @@ function Animator () {
             aD = typeof opts.animationDirection == 'boolean'? opts.animationDirection : true,
             sV = opts.startValue,
             eV = opts.endValue,
-            nF = opts.numFrames,
             ip = opts.interpolator,
             up = opts.updater,
             iT = opts.interpolTransform || function (v) {return v;},
             uA = opts.updateArgs,
-            fG = new FrameGenerator (nF),
-
-            // Used for determining if the frame generator should be started
-            FRAME_GENERATOR_STARTED = false;
+            fG = new FrameGenerator (opts.numFrames);
             
         // Create a new reference for the updater arguments and append a spot for the output of the interpolator function
-        uA = uA? (function (a) {var c = []; for (var i = 0; i < a.length; i++) {c.push (a[i])} return c;})(uA) : [];
-        uA.push (null);
+        uA = uA? copyUpdateArgumentArray (uA) : [null];
+
+        // Pause the FrameGenerator if the animation should not be active
+        if (iA) fG.pause ();
 
         // Store the animation in the animation object
-        animations[opts.animationName] = [iA, aD, sV, eV, nF, ip, up, iT, uA, fG, FRAME_GENERATOR_STARTED];
+        animations[opts.animationName] = [aD, sV, eV, ip, up, iT, uA, fG];
 
         return this;
     };
@@ -207,15 +218,24 @@ function Animator () {
         return this;
     };
 
-    // Begins the animator's update loop
-    this.play = function () {
-        if (!loopAnimation) loopAnimation = requestAnimationFrame (animatorLoop);
+    // Begins the animator's update loop. Plays any animations in the immediatelyReplay array.
+    this.play = function (immediatelyReplay) {
+        if (!loopAnimation) {
+            for (var i = 0; i < immediatelyReplay.length; i++) immediatelyReplay[i][FRAME_GENERATOR].play ();
+            loopAnimation = requestAnimationFrame (animatorLoop);
+        }
+
         return this;
     };
 
-    // Pauses the animator's update loop
+    // Pauses the animator's update loop and all animation's frame generators
     this.pause = function () {
         if (loopAnimation) {
+            // Pause all frame generators
+            for (var animation in animations) {if (animations.hasOwnProperty (animation)) {
+                animations[animation][FRAME_GENERATOR].pause ();
+            }}
+
             cancelAnimationFrame (loopAnimation);
             loopAnimation = false;
         }
@@ -254,6 +274,33 @@ function Animator () {
         
         return this;
     };
+
+    // Updates the update function argument array for the specified animation
+    this.updateAnimationUpdateArgs = function (animationName, newUpdateArgs) {
+        if (animations[animationName]) {
+            animations[UPDATE_ARGS] = copyUpdateArgumentArray (newUpdateArgs);
+        }
+
+        return this;
+    };
+
+    // Updates the update function to the specified function for the specified animation
+    this.updateAnimationUpdateFunction = function (animationName, newUpdateFunction) {
+        if (animations[animationName]) {
+            animations[UPDATER] = newUpdateFunction;
+        }
+
+        return this;
+    };
+
+    // Used to make a shallow copy of an update argument array, which includes a spot for the
+    // interpolator's output for the update function
+    function copyUpdateArgumentArray (array) {
+        var ret = [];
+        for (var i = 0; i < arra.length; i++) ret.push (array[i]);
+        ret.push (null);
+        return ret;
+    }
 }
 
 /**
@@ -264,29 +311,42 @@ function Animator () {
  *     numFrames - the highest value that the generator should produce
  *
  * Public Methods:
- *     start - [] <Updates to the latest time in milliseconds> (this object)
- *     reset - [] <Same as start but also sets the frame count to 0> (this object)
- *     next  - [neg] <Generates the next frame value. Goes backward if !!neg is true> (this object)
- *     frame - [] <Returns the current frame value> (floating point value)
+ *     start     - [] <Updates to the latest time in milliseconds> (this object)
+ *     reset     - [] <Same as start but also sets the frame count to 0> (this object)
+ *     pause     - [] <Pauses the internal clock, so .next() is constant> (this object)
+ *     unpause   - [] <Unpauses from a paused state> (this object)
+ *     isPaused  - [] <Returns whether or not this FrameGenerator is paused> (Boolean)
+ *     isStarted - [] <Returns whether or not this FrameGenerator was started> (Boolean)
+ *     next      - [neg] <Generates the next frame value. Goes backward if !!neg is true> (this object)
+ *     frame     - [] <Returns the current frame value> (floating point value)
  */
 function FrameGenerator (numFrames) {
     var n = numFrames,
         t_i = new Date ().getTime (),
         i_t = 0,
         offset = 0,         // Offsets new values of time by the amount of time paused
+        isStarted = false,  // Used to determine if the frame generator is "started"
         isNotPaused = true,
         tPaused = t_i,      // Used to store the time when paused
-        FPMS = 3 / 50;
+        FPMS = 3 / 50,
+        BACKWARD = -1,
+        FORWARD = 1;
 
     // Starts the internal clock
     this.start = function () {
-        t_i = new Date ().getTime ();
+        if (!isStarted) {
+            offset = 0;
+            isStarted = true;
+            t_i = new Date ().getTime ();
+        }
 
         return this;
     };
 
-    // Resets the frame counter
+    // Resets the FrameGenerator to construction state. Needs .start() to work again
     this.reset = function () {
+        isStarted = false;
+        offset = 0;
         i_t = 0;
 
         return this;
@@ -306,20 +366,23 @@ function FrameGenerator (numFrames) {
     this.unpause = function () {
         if (!isNotPaused) {
             // t_i = new Date ().getTime ();
-            offset += (new Date () - tPaused);
-
-            console.log ('offset: ' + offset);
-
+            if (isStarted) offset += (new Date () - tPaused);
             isNotPaused = true;
         }
 
         return this;
     };
 
+    // Returns whether this FrameGenerator is paused
+    this.isPaused = function () {return !isNotPaused;};
+
+    // Returns whether this FrameGenerator is started
+    this.isStarted = function () {return isStarted;};
+
     // Generates the next value for i_t. Counts backward if !!neg === true
     this.next = function (neg) {
-        if (isNotPaused) {
-            var dt = (new Date ().getTime () - t_i - offset) * (neg? -1 : 1);
+        if (isNotPaused && isStarted) {
+            var dt = (new Date ().getTime () - t_i - offset) * (neg? BACKWARD : FORWARD);
             i_t = rk4 (i_t, FPMS, dt, function () {return 0;})[0];
 
             // Does a bound check on the new value of i_t
@@ -334,9 +397,7 @@ function FrameGenerator (numFrames) {
     };
 
     // Returns the current frame number i_t
-    this.frame = function () {
-        return i_t;
-    };
+    this.frame = function () {return i_t;};
 
     /**
      * Performs Runge-Kutta integration for a discrete value dt. Used for normalizing i in animation
@@ -365,6 +426,34 @@ function FrameGenerator (numFrames) {
         return [xf, vf];
     };
 }
+
+/*
+Frame Generator Test Code:
+    var x = 0, fG = new FrameGenerator (6000);
+    (function frameGeneratorEndlessLoop () {
+        if (x > 0) {
+            console.log (fG.next().frame());
+        } else {
+            console.log (fG.start().frame());
+        }
+
+        x++;
+        setTimeout (frameGeneratorEndlessLoop, 1000);
+    })()
+
+    function pause () {
+        fG.pause();
+    }
+
+    function unpause () {
+        fG.unpause();
+    }
+
+    function reset () {
+        x = 0;
+        fG.reset();
+    }
+*/
 
 /**
  * RGBA Color Tweener that linearly interpolates the starting and the ending color through 
