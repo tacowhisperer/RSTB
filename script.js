@@ -298,6 +298,11 @@ function Animator () {
 
         return ret;
     }
+
+    //
+    this.toString = function () {
+        
+    };
 }
 
 /**
@@ -422,6 +427,11 @@ function FrameGenerator (numFrames) {
         
         return [xf, vf];
     };
+
+    // Returns a string value for this object in the format 'FG: <frame i/n> <is (not )paused> <FPMS*1000fps>'
+    this.toString = function () {
+        return isStarted? 'FG: <frame '+i_t+'/'+n+'> <is '+(isNotPaused?'not ' : '')+'paused> <'+(FPMS * 1000)+'fps>' : 'FG: <>';
+    };
 }
 
 /**
@@ -451,13 +461,11 @@ function AlphaColorTweener (sRGB, eRGB, sAlf, eAlf, num) {
         var p = 1 - i / n, q = i / n, r = Math.round, a = p * sA + q * eA,
             cRGB = x2R (l2X ([p * sLab[0] + q * eLab[0], p * sLab[1] + q * eLab[1], p * sLab[2] + q * eLab[2]]));
         
-        return 'rgba(' + r(cRGB[0]) + ', ' + r(cRGB[1]) + ', ' + r(cRGB[2]) + ', ' + a  + ')';
+        return 'rgba(' + r(cRGB[0]) + ',' + r(cRGB[1]) + ',' + r(cRGB[2]) + ',' + a  + ')';
     };
 
     // Returns the current rgb value as its numerical value in [0, 16777215]
-    function toHex (cRGB) {
-        return cRGB[0] * 65536 + cRGB[1] * 256 + cRGB[2];
-    };
+    function toHex (cRGB) {return cRGB[0] * 65536 + cRGB[1] * 256 + cRGB[2];};
 
     // Returns the array corresponding the xyz values of the input rgb array
     function r2X (rgb) {
@@ -526,6 +534,15 @@ function AlphaColorTweener (sRGB, eRGB, sAlf, eAlf, num) {
 
         return [R, G, B];
     }
+
+    // Returns a string value for this object in the format 'ACT: rgba(r0,g0,b0,a0) -n-> rgba(r1,g1,b1,a1)'
+    this.toString = function () {
+        var startVal = 'rgba(' + x2R (l2X (sLab)) + ',' + sA + ')',
+            endVal = 'rgba(' + x2R (l2X (eLab)) + ',' + eA + ')';
+
+        // 'ACT' stands for AlphaColorTweener
+        return 'ACT: ' + startVal + ' -' + n + '-> ' + endVal;
+    };
 }
 
 }})();
