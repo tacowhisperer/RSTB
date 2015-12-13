@@ -68,11 +68,11 @@ var BG_RGB             = [255, 255, 255],
 
 // Create the button and style it
 var cTSB = document.createElement ('p');
-cTSB.id = 'customToggleSideButton';
-cTSB.innerHTML = 'Hide';
-for (var prop in css) {
-    cTSB.style[prop] = css[prop];
-}
+    cTSB.id = 'customToggleSideButton';
+    cTSB.innerHTML = 'Hide';
+    for (var prop in css) {
+        cTSB.style[prop] = css[prop];
+    }
 
 // Add the new button to the DOM and create a new reference to it
 document.body.appendChild (cTSB);
@@ -125,18 +125,22 @@ function Animator () {
 
     // Internal looping function. Must run this.play to start and this.pause to stop
     function animatorLoop () {
-        for (var animation in animations) {y
+        for (var animation in animations) {
             var a = animations[animation], fG = a[FRAME_GENERATOR];
+
+            // Start the fG if it is not already started
+            if (!fG.isStarted ()) fG.start ();
+
+            // console.log ('animation fG: ' + fG);
 
             // Only update values if the animation if not paused
             if (!fG.isPaused ()) {
-                if (!fG.isStarted ()) {
-                    fG.start ();
-                }
 
                 // Stores the interpolated value in the last entry of the UPDATE_ARGS array
                 var uA = a[UPDATE_ARGS], i = fG.next (a[ANIM_DIRECTION]).frame ();
                 uA[uA.length - 1] = a[INTERPOLATOR](a[START_VALUE], a[END_VALUE], a[INTERPOL_TRANS](i));
+
+                // console.log ('update args for "' + animation + '": [' + uA + ']');
 
                 // Call the updator to do whatever it needs to do
                 a[UPDATER].apply (a[UPDATER], uA);
@@ -152,7 +156,7 @@ function Animator () {
 
     // Starts the animator loop
     this.start = function () {
-        if (!loopAnimation && !animIsStarted) {
+        if (!animIsStarted) {
             animIsStarted = true;
             loopAnimation = requestAnimationFrame (animatorLoop);
         }
@@ -199,7 +203,7 @@ function Animator () {
         uA = uA? copyUpdateArgumentArray (uA) : [null];
 
         // Pause the FrameGenerator if the animation should not be active
-        if (iA) fG.pause ();
+        if (!iA) fG.pause ();
 
         // Store the animation in the animation object
         animations[opts.animationName] = [aD, sV, eV, ip, up, iT, uA, fG];
@@ -434,40 +438,36 @@ function FrameGenerator (numFrames) {
     };
 }
 
-/**
- * RGBA Color Tweener that linearly interpolates the starting and the ending color through 
- * the CIE-L*ab color space.
- *
- * Arguments:
- *     sRGB, eRGB - Array in the format [0-255, 0-255, 0-255] specifying the starting and 
- *                  ending RGB colors
- *     sAlf, eAlf - Value [0, 1] in float literal format specifying the starting and ending
- *                  alpha values for the CSS rgba props.
- *     num - the number of frames that the color will be fading
- *
- * Public Methods:
- *     colorAt - [i] <Calculates color and alpha interpolation at i/num> (valid CSS rgba string)
- */
-function AlphaColorTweener (sRGB, eRGB, sAlf, eAlf, num) {
-    var sLab = x2L (r2X (sRGB)),
-        eLab = x2L (r2X (eRGB)),
-        sA   = sAlf,
-        eA   = eAlf,
-        n    = num;
+function rgbaInterpolate (startRGBA, endRGBA, q) {
+    var I = 0,
+        RED    = I++,
+        L_STAR = RED,
 
-    // Returns the color interpolation at i as a hex value if hex is true, or as an 'rgb'
-    this.colorAt = function (i) {
-        if (i < 0) i = 0;
-        var p = 1 - i / n, q = i / n, r = Math.round, a = p * sA + q * eA,
-            cRGB = x2R (l2X ([p * sLab[0] + q * eLab[0], p * sLab[1] + q * eLab[1], p * sLab[2] + q * eLab[2]]));
+        GREEN  = I++,
+        A_STAR = GREEN,
         
-        return 'rgba(' + r(cRGB[0]) + ',' + r(cRGB[1]) + ',' + r(cRGB[2]) + ',' + a  + ')';
-    };
+        BLUE   = I++,
+        B_STAR = BLUE,
+        
+        ALPHA = I++;
 
-    // Returns the current rgb value as its numerical value in [0, 16777215]
-    function toHex (cRGB) {return cRGB[0] * 65536 + cRGB[1] * 256 + cRGB[2];};
+    q = q < 0? 0 : q > 1? 1 : q;
+    var p = 1 - q,
+        r = Math.round,
 
-    // Returns the array corresponding the xyz values of the input rgb array
+        sRGBA = toArr (startRGBA),
+        eRGBA = toArr (endRGBA),
+        sL = x2L (r2X (sRGBA)),
+        eL = x2L (r2X (eRGBA)),
+
+        iL = p * sL[L_STAR] + q * eL[L_STAR],
+        ia = p * sL[A_STAR] + q * eL[A_STAR],
+        ib = p * sL[B_STAR] + q * eL[B_STAR],
+        a = p * sRGBA[ALPHA] + q * eRGBA[ALPHA],
+
+        iRGBA = x2R (l2X ([iL, ia, ib, a]));
+
+        // Returns the array corresponding the xyz values of the input rgb array
     function r2X (rgb) {
         var R = rgb[0] / 255,
             G = rgb[1] / 255,
@@ -535,17 +535,54 @@ function AlphaColorTweener (sRGB, eRGB, sAlf, eAlf, num) {
         return [R, G, B];
     }
 
-    // Returns a string value for this object in the format 'ACT: rgba(r0,g0,b0,a0) -n-> rgba(r1,g1,b1,a1)'
-    this.toString = function () {
-        var startVal = 'rgba(' + x2R (l2X (sLab)) + ',' + sA + ')',
-            endVal = 'rgba(' + x2R (l2X (eLab)) + ',' + eA + ')';
+    function toArr (rgba) {
+        // Regex formulas that check for digits and decimals without a zero in front from the rgba string
+        var COLOR_VALUES  = /\d+\.?\d*/g,
+            NONZEROED_DEC = /,\s*\.[^,]+\)$/;
 
-        // 'ACT' stands for AlphaColorTweener
-        return 'ACT: ' + startVal + ' -' + n + '-> ' + endVal;
-    };
+        // Autoconverts matches to arrays and fixes any bad decimals coming from the string
+        var array = rgba.match (COLOR_VALUES);
+        if (rgba.match (NONZEROED_DEC)) array[ALPHA] = '0.' + array[ALPHA];
+
+        // Casts each value to a decimal and returns the array for interpolation
+        for (var i = 0; i < array.length; i++) array[i] = +array[i];
+        return array;
+    }
+
+    return 'rgba(' + r(iRGBA[RED]) + ',' + r(iRGBA[GREEN]) + ',' + r(iRGBA[BLUE]) + ',' + a + ')';
 }
 
 }})();
+
+/*
+RGBA Interpolation Function Test Code:
+
+var body = document.getElementsByTagName ('body')[0],
+    sRGBA = 'rgba(255, 255, 255, 1.0)',
+    eRGBA = 'rgba(0, 0, 0, 1.0)',
+    percent = 0,
+    konstant = 1;
+
+function tP (p, TYPE) {
+    var transformations = [
+        function (x) {return x;},
+        function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
+        function (x) {return Math.pow (Math.E, 4 * x) / Math.pow (Math.E, 4);}
+    ];
+
+    return transformations[TYPE](p);
+}
+
+function animateBgColor () {
+    body.style.backgroundColor = rgbaInterpolate (sRGBA, eRGBA, tP (percent, 1));
+
+    percent += konstant * 1/60;
+    if (percent > 1) konstant = -1;
+    else if (percent < 0) konstant = 1;
+}
+
+setInterval (animateBgColor, 50 / 3);
+*/
 
 /*
 Frame Generator Test Code:
