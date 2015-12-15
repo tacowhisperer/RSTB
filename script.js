@@ -68,6 +68,10 @@ var BG_RGB             = [255, 255, 255],
         'z-index':             Number.MAX_SAFE_INTEGER || 509031400070006
     };
 
+// Store the side class array display style for all side class elements
+var sCDS = [];
+for (var i = 0; i < rSCA.length; i++) sCDS.push (rSCA[i].style.display);
+
 // Create the button and style it
 var cTSB = document.createElement ('p');
     cTSB.id = 'customToggleSideButton';
@@ -83,26 +87,75 @@ var button = document.getElementById (cTSB.id);
 // Create the animation objects
 var txtAnimation = {
         animationName:     TXT_ANIMATION,
-        startValue:        txtRGBA0,
-        endValue:          txtRGBA1,
+        startValue:        [TXT_RGB[0], TXT_RGB[1], TXT_RGB[2], IDLE_ALPHA],
+        endValue:          [TXT_RGB[0], TXT_RGB[1], TXT_RGB[2], ACTIVE_ALPHA],
         numFrames:         HOVER_FRAME_DUR,
         interpolator:      rgbaInterpolate,
-        updater:           rgbaUpdate,
+        updater:           txtRGBAUpdate,
         interpolTransform: interpolTrans,
         isActive:          isAct
     },
 
     bgAnimation = {
         animationName:     BG_ANIMATION,
-        startValue:        bgRGBA0,
-        endValue:          bgRGBA1,
+        startValue:        [BG_RGB[0], BG_RGB[1], BG_RGB[2], IDLE_ALPHA],
+        endValue:          [BG_RGB[0], BG_RGB[1], BG_RGB[2], ACTIVE_ALPHA],
         numFrames:         HOVER_FRAME_DUR,
         interpolator:      rgbaInterpolate,
-        updater:           rgbaUpdate,
+        updater:           bgRGBAUpdate,
         interpolTransform: interpolTrans,
         isActive:          isAct
     };
 
+animator.addAnimation (txtAnimation).addAnimation (bgAnimation).start ();
+
+// Hover and click variables
+var hide = false, onButton = false;
+
+// Handles mouseenter animation
+button.mouseenter = function () {
+    onButton = true;
+
+};
+
+// Handles mouseleave animation
+button.mouseleave = function () {
+    onButton = false;
+};
+
+// Handles mousedown animation
+button.mousedown = function () {
+
+};
+
+// Handles mouseup animation and toggle functionality
+button.mouseup = function () {
+    if (onButton) {
+        hide = !hide;
+        if (hide) {
+            button.innerHTML = 'Show';
+            for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = 'none';
+        }
+
+        else {
+            button.innerHTML = 'Hide';
+            for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = sCDS[i];
+        }
+    }
+};
+
+/**
+ * Takes as input 2 RGBA arrays [0-255, 0-255, 0-255, 0-1] and returns the interpolated
+ * RGBA string at q percent through the CIE*Lab color space.
+ *
+ * Arguments:
+ *     sRGBA - Starting RGBA array of the interpolation
+ *     eRGBA - Ending RGBA array of the interpolation
+ *     q     - Percentage (domain: [0, 1]) of the progress of the interpolation through CIE*Lab color space
+ *
+ * Returns:
+ *     CSS-valid RGBA string with the interpolated value ready to go.
+ */
 function rgbaInterpolate (sRGBA, eRGBA, q) {
     var I = 0,
         RED    = I++,
@@ -133,6 +186,8 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         iRGBA = x2R (l2X ([iL, ia, ib, a]));
 
         // Returns the array corresponding the xyz values of the input rgb array
+    
+    // Returns the array corresponding to the XYZ values of the input RGB array
     function r2X (rgb) {
         var R = rgb[0] / 255,
             G = rgb[1] / 255,
@@ -149,7 +204,7 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         return [X, Y, Z];
     }
 
-    // Returns the array corresponding to the CIE-L*ab values of the input xyz array
+    // Returns the array corresponding to the CIE-L*ab values of the input XYZ array
     function x2L (xyz) {
         var X = xyz[0] / 95.047,
             Y = xyz[1] / 100,
@@ -168,7 +223,7 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         return [L, a, b];
     }
 
-    // Returns the array corresponding to the xyz values of the input CIE-L*ab array
+    // Returns the array corresponding to the XYZ values of the input CIE-L*ab array
     function l2X (Lab) {
         var Y = (Lab[0] + 16) / 116,
             X = Lab[1] / 500 + Y,
@@ -182,7 +237,7 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         return [X, Y, Z];
     }
 
-    // Returns the array corresponding to the rgb values of the input xyz array
+    // Returns the array corresponding to the RGB values of the input XYZ array
     function x2R (xyz) {
         var X = xyz[0] / 100,
             Y = xyz[1] / 100,
@@ -200,25 +255,31 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         return [R, G, B];
     }
 
-    // function toArr (rgba) {
-    //     // Regex formulas that check for digits and decimals without a zero in front from the rgba string
-    //     var COLOR_VALUES  = /\d+\.?\d*/g,
-    //         NONZEROED_DEC = /,\s*\.[^,]+\)$/;
+    /*function toArr (rgba) {
+        // Regex formulas that check for digits and decimals without a zero in front from the rgba string
+        var COLOR_VALUES  = /\d+\.?\d*/g,
+            NONZEROED_DEC = /,\s*\.[^,]+\)$/;
 
-    //     // Autoconverts matches to arrays and fixes any bad decimals coming from the string
-    //     var array = rgba.match (COLOR_VALUES);
-    //     if (rgba.match (NONZEROED_DEC)) array[ALPHA] = '0.' + array[ALPHA];
+        // Autoconverts matches to arrays and fixes any bad decimals coming from the string
+        var array = rgba.match (COLOR_VALUES);
+        if (rgba.match (NONZEROED_DEC)) array[ALPHA] = '0.' + array[ALPHA];
 
-    //     // Casts each value to a decimal and returns the array for interpolation
-    //     for (var i = 0; i < array.length; i++) array[i] = +array[i];
-    //     return array;
-    // }
+        // Casts each value to a decimal and returns the array for interpolation
+        for (var i = 0; i < array.length; i++) array[i] = +array[i];
+        return array;
+    }*/
 
     return 'rgba(' + r(iRGBA[RED]) + ',' + r(iRGBA[GREEN]) + ',' + r(iRGBA[BLUE]) + ',' + a + ')';
 }
 
-function rgbaUpdate () {
-    
+// Updates the button
+function txtRGBAUpdate (rgba) {
+    button.style.color = rgba;
+    button.style.border = borderAnim + rgba;
+}
+
+function bgRGBAUpdate (rgba) {
+    button.style.backgroundColor = rgba;
 }
 
 /**
@@ -233,7 +294,29 @@ function rgbaUpdate () {
  *     none
  *
  * Public Methods:
- *     addAnimation                  - [opts] <See the method for necessary details> (this obj)
+ *     addAnimation                  - [opts] <See below for necessary details> (this obj)
+ *                             Argument Object Required Key-Value Pairs:
+ *                                 animationName - String of the name of the animation
+ *                                 startValue    - Starting value of the data to be animated
+ *                                 endValue      - Ending value of the data to be animated
+ *                                 numFrames     - Number of frames (normalized to 60fps) that the animation should last
+ *                                 interpolator  - Function that interpolates the starting and ending values. Its arguments
+ *                                                 are in the following order: startValue, endValue, p where p is in [0, 1]
+ *                                 updater       - Function called every time the animator is done calculating frame values
+ *                                                 and is currently animating. Uses the arguments provided in the updaterArgs
+ *                                                 array (if provided), along with the last argument being the return value
+ *                                                 of the interpolator function (not to be confused with the interpolation
+ *                                                 transform).
+ *
+ *                             Argument Object Optional Key-Value Pairs:
+ *                                 interpolTransform - Function that transforms the p argument of the interpolator to another 
+ *                                                     value in [0, 1]. Example: function (v) {return 1 - Math.sqrt (1 - v * v);}
+ *                                 updateArgs        - Array that will hold the arguments to be fed to the updater function.
+ *                                                     Return value from the interpolator function is appended to the end of this
+ *                                                     array.
+ *                                 isActive          - True if the animation should be running, false otherwise. Defaults to true.
+ *                                 animateNegatively - True if the animation should be negative (1 -> 0), false otherwise (0 -> 1)
+ *                                                     Defaults to false.
  *     removeAnimation               - [animation] <Removes the animation from the animator> (this obj)
  *     start                         - [] <Starts the animator main loop> (this obj)
  *     play                          - [immediatelyReplay] <Reenables the main loop and plays animations in fed array> (this obj)
@@ -305,30 +388,7 @@ function Animator () {
         return this;
     }
 
-    /**
-     * Argument Object Required Key-Value Pairs:
-     *     animationName - String of the name of the animation
-     *     startValue    - Starting value of the data to be animated
-     *     endValue      - Ending value of the data to be animated
-     *     numFrames     - Number of frames (normalized to 60fps) that the animation should last
-     *     interpolator  - Function that interpolates the starting and ending values. Its arguments
-     *                     are in the following order: startValue, endValue, p where p is in [0, 1]
-     *     updater       - Function called every time the animator is done calculating frame values
-     *                     and is currently animating. Uses the arguments provided in the updaterArgs
-     *                     array (if provided), along with the last argument being the return value
-     *                     of the interpolator function (not to be confused with the interpolation
-     *                     transform).
-     *
-     * Argument Object Optional Key-Value Pairs:
-     *     interpolTransform - Function that transforms the p argument of the interpolator to another 
-     *                         value in [0, 1]. Example: function (v) {return 1 - Math.sqrt (1 - v * v);}
-     *     updateArgs        - Array that will hold all of the arguments to be fed to the updater function.
-     *                         Return value from the interpolator function is appended to the end of this
-     *                         array.
-     *     isActive          - True if the animation should be running, false otherwise. Defaults to true.
-     *     animateNegatively - True if the animation should be negative (1 -> 0), false otherwise (0 -> 1).
-     *                         Defaults to false.
-     */
+    // Adds an animation plain object to the animator. Animations have no particular order.
     this.addAnimation = function (opts) {
         var iA = typeof opts.isActive == 'boolean'? opts.isActive : true,
             aD = typeof opts.animateNegatively == 'boolean'? opts.animateNegatively : false,
@@ -586,93 +646,3 @@ function Animator () {
 }
 
 }})();
-
-/*
-RGBA Interpolation Function Test Code:
-    var body = document.getElementsByTagName ('body')[0],
-        sRGBA = 'rgba(255, 255, 255, 1.0)',
-        eRGBA = 'rgba(0, 0, 0, 1.0)',
-        percent = 0,
-        konstant = 1;
-
-    function tP (p, TYPE) {
-        var transformations = [
-            function (x) {return x;},
-            function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
-            function (x) {return Math.pow (Math.E, 4 * x) / Math.pow (Math.E, 4);}
-        ];
-
-        return transformations[TYPE](p);
-    }
-
-    function animateBgColor () {
-        body.style.backgroundColor = rgbaInterpolate (sRGBA, eRGBA, tP (percent, 1));
-
-        percent += konstant * 1/60;
-        if (percent > 1) konstant = -1;
-        else if (percent < 0) konstant = 1;
-    }
-
-    setInterval (animateBgColor, 50 / 3);
-*/
-
-/*
-Frame Generator Test Code:
-    var x = 0, fG = new FrameGenerator (6000);
-    (function frameGeneratorEndlessLoop () {
-        if (x > 0) {
-            console.log (fG.next().frame());
-        } else {
-            console.log (fG.start().frame());
-        }
-
-        x++;
-        setTimeout (frameGeneratorEndlessLoop, 1000);
-    })()
-
-    function pause () {
-        fG.pause();
-    }
-
-    function unpause () {
-        fG.unpause();
-    }
-
-    function reset () {
-        x = 0;
-        fG.reset();
-    }
-*/
-
-/*
-Animator Test Code:
-    var animator = new Animator (),
-        
-        animation0 = {
-            animationName: 'Test 1',
-            startValue: 0,
-            endValue: 1,
-            numFrames: 10,
-            interpolator: function (a, b, p) {
-                return (1 - p) * a + p * b;
-            },
-            updater: function (v) {
-                console.log ('Test 1: ' + v);
-            }
-        },
-
-        animation1 = {
-            animationName: 'Test 2',
-            startValue: 1,
-            endValue: 0,
-            numFrames: 10,
-            interpolator: function (a, b, p) {
-                return (1 - p) * a + p * b;
-            },
-            updater: function (v) {
-                console.log ('Test 2: ' + v);
-            }
-        };
-
-    animator.addAnimation (animation0).addAnimation (animation1).start ();
-*/
