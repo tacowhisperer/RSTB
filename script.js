@@ -28,6 +28,11 @@ var BG_RGB             = [255, 255, 255],
     IDLE_ALPHA         = 0.25,
     ACTIVE_ALPHA       = 1.0,
 
+// Easy-to-manipulate animation variables
+    TXT_ANIMATION   = 'Text Color Animation',
+    BG_ANIMATION    = 'Background Color Animation',
+    HOVER_FRAME_DUR = 50,
+
 // String concatenations for CSS values
     bgRGBA0    = 'rgba(' + BG_RGB + ',' + IDLE_ALPHA + ')',
     bgRGBA1    = 'rgba(' + BG_RGB + ',' + ACTIVE_ALPHA + ')',
@@ -40,13 +45,10 @@ var BG_RGB             = [255, 255, 255],
     txtBorder0 = borderAnim + txtRGBA0,
     txtBorder1 = borderAnim + txtRGBA1,
 
-// Animation variables and objects
-    FRAME_COUNT = 50,
-
-    fG          = new FrameGenerator (FRAME_COUNT),
-    bgTw        = new AlphaColorTweener (BG_RGB, BG_RGB, IDLE_ALPHA, ACTIVE_ALPHA, FRAME_COUNT),
-    txtTw       = new AlphaColorTweener (TXT_RGB, TXT_RGB, IDLE_ALPHA, ACTIVE_ALPHA, FRAME_COUNT),
-    bS          = new ButtonState (bgTw, txtTw, fG),
+// Animation and animator construction
+    animator      = new Animator (),
+    interpolTrans = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
+    isAct         = false,
 
 // Initial CSS values for the button
     css = {
@@ -78,6 +80,147 @@ var cTSB = document.createElement ('p');
 document.body.appendChild (cTSB);
 var button = document.getElementById (cTSB.id);
 
+// Create the animation objects
+var txtAnimation = {
+        animationName:     TXT_ANIMATION,
+        startValue:        txtRGBA0,
+        endValue:          txtRGBA1,
+        numFrames:         HOVER_FRAME_DUR,
+        interpolator:      rgbaInterpolate,
+        updater:           rgbaUpdate,
+        interpolTransform: interpolTrans,
+        isActive:          isAct
+    },
+
+    bgAnimation = {
+        animationName:     BG_ANIMATION,
+        startValue:        bgRGBA0,
+        endValue:          bgRGBA1,
+        numFrames:         HOVER_FRAME_DUR,
+        interpolator:      rgbaInterpolate,
+        updater:           rgbaUpdate,
+        interpolTransform: interpolTrans,
+        isActive:          isAct
+    };
+
+function rgbaInterpolate (sRGBA, eRGBA, q) {
+    var I = 0,
+        RED    = I++,
+        L_STAR = RED,
+
+        GREEN  = I++,
+        A_STAR = GREEN,
+        
+        BLUE   = I++,
+        B_STAR = BLUE,
+        
+        ALPHA = I++;
+
+    q = q < 0? 0 : q > 1? 1 : q;
+    var p = 1 - q,
+        r = Math.round,
+
+        // sRGBA = toArr (startRGBA),
+        // eRGBA = toArr (endRGBA),
+        sL = x2L (r2X (sRGBA)),
+        eL = x2L (r2X (eRGBA)),
+
+        iL = p * sL[L_STAR] + q * eL[L_STAR],
+        ia = p * sL[A_STAR] + q * eL[A_STAR],
+        ib = p * sL[B_STAR] + q * eL[B_STAR],
+        a = p * sRGBA[ALPHA] + q * eRGBA[ALPHA],
+
+        iRGBA = x2R (l2X ([iL, ia, ib, a]));
+
+        // Returns the array corresponding the xyz values of the input rgb array
+    function r2X (rgb) {
+        var R = rgb[0] / 255,
+            G = rgb[1] / 255,
+            B = rgb[2] / 255;
+
+        R = 100 * (R > 0.04045? Math.pow ((R + 0.055) / 1.055, 2.4) : R / 12.92);
+        G = 100 * (G > 0.04045? Math.pow ((G + 0.055) / 1.055, 2.4) : G / 12.92);
+        B = 100 * (B > 0.04045? Math.pow ((B + 0.055) / 1.055, 2.4) : B / 12.92);
+
+        var X = R * 0.4124 + G * 0.3576 + B * 0.1805,
+            Y = R * 0.2126 + G * 0.7152 + B * 0.0722,
+            Z = R * 0.0193 + G * 0.1192 + B * 0.9505;
+
+        return [X, Y, Z];
+    }
+
+    // Returns the array corresponding to the CIE-L*ab values of the input xyz array
+    function x2L (xyz) {
+        var X = xyz[0] / 95.047,
+            Y = xyz[1] / 100,
+            Z = xyz[2] / 108.883,
+            T = 1 / 3,
+            K = 16 / 116;
+
+        X = X > 0.008856? Math.pow (X, T) : (7.787 * X) + K;
+        Y = Y > 0.008856? Math.pow (Y, T) : (7.787 * Y) + K;
+        Z = Z > 0.008856? Math.pow (Z, T) : (7.787 * Z) + K;
+
+        var L = (116 * Y) - 16,
+            a = 500 * (X - Y),
+            b = 200 * (Y - Z);
+
+        return [L, a, b];
+    }
+
+    // Returns the array corresponding to the xyz values of the input CIE-L*ab array
+    function l2X (Lab) {
+        var Y = (Lab[0] + 16) / 116,
+            X = Lab[1] / 500 + Y,
+            Z = Y - Lab[2] / 200,
+            K = 16 / 116;
+
+        X = 95.047 * ((X * X * X) > 0.008856? X * X * X : (X - K) / 7.787);
+        Y = 100 * ((Y * Y * Y) > 0.008856? Y * Y * Y : (Y - K) / 7.787);
+        Z = 108.883 * ((Z * Z * Z) > 0.008856? Z * Z * Z : (Z - K) / 7.787);
+
+        return [X, Y, Z];
+    }
+
+    // Returns the array corresponding to the rgb values of the input xyz array
+    function x2R (xyz) {
+        var X = xyz[0] / 100,
+            Y = xyz[1] / 100,
+            Z = xyz[2] / 100,
+            T = 1 / 2.4;
+
+        var R = X *  3.2406 + Y * -1.5372 + Z * -0.4986,
+            G = X * -0.9689 + Y *  1.8758 + Z *  0.0415,
+            B = X *  0.0557 + Y * -0.2040 + Z *  1.0570;
+
+        R = 255 * (R > 0.0031308? 1.055 * Math.pow (R, T) - 0.055 : 12.92 * R);
+        G = 255 * (G > 0.0031308? 1.055 * Math.pow (G, T) - 0.055 : 12.92 * G);
+        B = 255 * (B > 0.0031308? 1.055 * Math.pow (B, T) - 0.055 : 12.92 * B);
+
+        return [R, G, B];
+    }
+
+    // function toArr (rgba) {
+    //     // Regex formulas that check for digits and decimals without a zero in front from the rgba string
+    //     var COLOR_VALUES  = /\d+\.?\d*/g,
+    //         NONZEROED_DEC = /,\s*\.[^,]+\)$/;
+
+    //     // Autoconverts matches to arrays and fixes any bad decimals coming from the string
+    //     var array = rgba.match (COLOR_VALUES);
+    //     if (rgba.match (NONZEROED_DEC)) array[ALPHA] = '0.' + array[ALPHA];
+
+    //     // Casts each value to a decimal and returns the array for interpolation
+    //     for (var i = 0; i < array.length; i++) array[i] = +array[i];
+    //     return array;
+    // }
+
+    return 'rgba(' + r(iRGBA[RED]) + ',' + r(iRGBA[GREEN]) + ',' + r(iRGBA[BLUE]) + ',' + a + ')';
+}
+
+function rgbaUpdate () {
+    
+}
+
 /**
  * Generic animator that animates from one state to another state based on the interpolating
  * function fed during construction (defaults to linear if none provided). Handles positive,
@@ -88,8 +231,6 @@ var button = document.getElementById (cTSB.id);
  *
  * Arguments:
  *     none
- *
- * TODO: ADD START METHOD TO ANIMATOR
  *
  * Public Methods:
  *     addAnimation                  - [opts] <See the method for necessary details> (this obj)
@@ -200,7 +341,7 @@ function Animator () {
             fG = new FrameGenerator (opts.numFrames);
 
 
-        console.log ('animation direction: ' + aD);
+        // console.log ('animation direction: ' + aD);
             
         // Create a new reference for the updater arguments and append a spot for the output of the interpolator function
         uA = uA? copyUpdateArgumentArray (uA) : [null];
@@ -227,7 +368,7 @@ function Animator () {
             if (immediatelyReplay) {
                 for (var i = 0; i < immediatelyReplay.length; i++) immediatelyReplay[i][FRAME_GENERATOR].play ();
             }
-            
+
             loopAnimation = requestAnimationFrame (animatorLoop);
         }
 
@@ -309,258 +450,139 @@ function Animator () {
         return ret;
     }
 
-    //
-    this.toString = function () {
-        
-    };
-}
-
-/**
- * Normalizes variable framerates to 60fps using 4th order Runge-Kutta integration. This
- * implementation does not produce only integer values.
- *
- * Arguments:
- *     numFrames - the highest value that the generator should produce
- *
- * Public Methods:
- *     start     - [] <Updates to the latest time in milliseconds> (this object)
- *     reset     - [] <Same as start but also sets the frame count to 0> (this object)
- *     pause     - [] <Pauses the internal clock, so .next() is constant> (this object)
- *     unpause   - [] <Unpauses from a paused state> (this object)
- *     isPaused  - [] <Returns whether or not this FrameGenerator is paused> (Boolean)
- *     isStarted - [] <Returns whether or not this FrameGenerator was started> (Boolean)
- *     next      - [neg] <Generates the next frame value. Goes backward if !!neg is true> (this object)
- *     frame     - [] <Returns the current frame value> (floating point value)
- */
-function FrameGenerator (numFrames) {
-    var n = numFrames,
-        t_i = Date.now (),
-        i_t = 0,
-        offset = 0,         // Offsets new values of time by the amount of time paused
-        isStarted = false,  // Used to determine if the frame generator is "started"
-        isNotPaused = true,
-        tPaused = t_i,      // Used to store the time when paused
-        FPMS = 3 / 50,
-        BACKWARD = -1,
-        FORWARD = 1;
-
-    // Starts the internal clock
-    this.start = function () {
-        if (!isStarted) {
-            offset = 0;
-            isStarted = true;
-            t_i = Date.now ();
-        }
-
-        return this;
-    };
-
-    // Resets the FrameGenerator to construction state. Needs .start() to work again
-    this.reset = function () {
-        isStarted = false;
-        offset = 0;
-        i_t = 0;
-
-        return this;
-    };
-
-    // Pauses the FrameGenerator such that calling next on it will not change the value of the frame
-    this.pause = function () {
-        if (isNotPaused) {
-            tPaused = t_i;
-            isNotPaused = false;
-        }
-
-        return this;
-    };
-
-    // Unpauses the FrameGenerator
-    this.unpause = function () {
-        if (!isNotPaused) {
-            // t_i = Date.now ();
-            if (isStarted) offset += (Date.now () - tPaused);
-            isNotPaused = true;
-        }
-
-        return this;
-    };
-
-    // Returns whether this FrameGenerator is paused
-    this.isPaused = function () {return !isNotPaused;};
-
-    // Returns whether this FrameGenerator is started
-    this.isStarted = function () {return isStarted;};
-
-    // Generates the next value for i_t. Counts backward if !!neg === true
-    this.next = function (neg) {
-        if (isNotPaused && isStarted) {
-            var dt = (Date.now () - t_i - offset) * (neg? BACKWARD : FORWARD);
-
-            console.log ('i_t0: ' + i_t);
-
-            i_t = rk4 (i_t, FPMS, dt, function () {return 0;})[0];
-
-            console.log ('i_t1: ' + i_t);
-
-            // Does a bound check on the new value of i_t
-            if (i_t < 0) i_t = 0;
-            else if (i_t > n) i_t = n;
-
-            // Sets the new t_i value for the next call
-            t_i = Date.now () - offset;
-        }
-
-        return this;
-    };
-
-    // Returns the current frame number i_t
-    this.frame = function () {return i_t;};
-
     /**
-     * Performs Runge-Kutta integration for a discrete value dt. Used for normalizing i in animation
-     * across different framerates by different machines.
+     * Normalizes variable framerates to 60fps using 4th order Runge-Kutta integration. This
+     * implementation does not produce only integer values.
      *
      * Arguments:
-     *     x  - initial position
-     *     v  - initial velocity
-     *     dt - timestep
-     *     a  - acceleration function handler
+     *     numFrames - the highest value that the generator should produce
      *
-     * Returns:
-     *     [xf, vf] - array containing the next position and velocity
+     * Public Methods:
+     *     start     - [] <Updates to the latest time in milliseconds> (this object)
+     *     reset     - [] <Same as start but also sets the frame count to 0> (this object)
+     *     pause     - [] <Pauses the internal clock, so .next() is constant> (this object)
+     *     unpause   - [] <Unpauses from a paused state> (this object)
+     *     isPaused  - [] <Returns whether or not this FrameGenerator is paused> (Boolean)
+     *     isStarted - [] <Returns whether or not this FrameGenerator was started> (Boolean)
+     *     next      - [neg] <Generates the next frame value. Goes backward if !!neg is true> (this object)
+     *     frame     - [] <Returns the current frame value> (floating point value)
      */
-    function rk4 (x, v, dt, a) {
-        var C = 0.5 * dt, K = dt / 6;
+    function FrameGenerator (numFrames) {
+        var n = numFrames,
+            t_i = Date.now (),
+            i_t = 0,
+            offset = 0,         // Offsets new values of time by the amount of time paused
+            isStarted = false,  // Used to determine if the frame generator is "started"
+            isNotPaused = true,
+            tPaused = t_i,      // Used to store the time when paused
+            FPMS = 3 / 50,
+            BACKWARD = -1,
+            FORWARD = 1;
 
-        var x1 = x,             v1 = v,             a1 = a (x, v, 0),
-            x2 = x + C * v1,    v2 = v + C * a1,    a2 = a (x2, v2, C),
-            x3 = x + C * v2,    v3 = v + C * a2,    a3 = a (x3, v3, C),
-            x4 = x + v3 * dt,   v4 = v + a3 * dt,   a4 = a (x4, v4, dt);
+        // Starts the internal clock
+        this.start = function () {
+            if (!isStarted) {
+                offset = 0;
+                isStarted = true;
+                t_i = Date.now ();
+            }
 
-        var xf = x + K * (v1 + 2 * v2 + 2 * v3 + v4),
-            vf = v + K * (a1 + 2 * a2 + 2 * a3 + a4);
-        
-        return [xf, vf];
-    };
+            return this;
+        };
 
-    // Returns a string value for this object in the format 'FG: <frame i/n> <is (not )paused> <FPMS*1000fps>'
-    this.toString = function () {
-        return isStarted? 'FG: <frame '+i_t+'/'+n+'> <is '+(isNotPaused?'not ' : '')+'paused> <'+(FPMS * 1000)+'fps>' : 'FG: <>';
-    };
-}
+        // Resets the FrameGenerator to construction state. Needs .start() to work again
+        this.reset = function () {
+            isStarted = false;
+            offset = 0;
+            i_t = 0;
 
-function rgbaInterpolate (startRGBA, endRGBA, q) {
-    var I = 0,
-        RED    = I++,
-        L_STAR = RED,
+            return this;
+        };
 
-        GREEN  = I++,
-        A_STAR = GREEN,
-        
-        BLUE   = I++,
-        B_STAR = BLUE,
-        
-        ALPHA = I++;
+        // Pauses the FrameGenerator such that calling next on it will not change the value of the frame
+        this.pause = function () {
+            if (isNotPaused) {
+                tPaused = t_i;
+                isNotPaused = false;
+            }
 
-    q = q < 0? 0 : q > 1? 1 : q;
-    var p = 1 - q,
-        r = Math.round,
+            return this;
+        };
 
-        sRGBA = toArr (startRGBA),
-        eRGBA = toArr (endRGBA),
-        sL = x2L (r2X (sRGBA)),
-        eL = x2L (r2X (eRGBA)),
+        // Unpauses the FrameGenerator
+        this.unpause = function () {
+            if (!isNotPaused) {
+                // t_i = Date.now ();
+                if (isStarted) offset += (Date.now () - tPaused);
+                isNotPaused = true;
+            }
 
-        iL = p * sL[L_STAR] + q * eL[L_STAR],
-        ia = p * sL[A_STAR] + q * eL[A_STAR],
-        ib = p * sL[B_STAR] + q * eL[B_STAR],
-        a = p * sRGBA[ALPHA] + q * eRGBA[ALPHA],
+            return this;
+        };
 
-        iRGBA = x2R (l2X ([iL, ia, ib, a]));
+        // Returns whether this FrameGenerator is paused
+        this.isPaused = function () {return !isNotPaused;};
 
-        // Returns the array corresponding the xyz values of the input rgb array
-    function r2X (rgb) {
-        var R = rgb[0] / 255,
-            G = rgb[1] / 255,
-            B = rgb[2] / 255;
+        // Returns whether this FrameGenerator is started
+        this.isStarted = function () {return isStarted;};
 
-        R = 100 * (R > 0.04045? Math.pow ((R + 0.055) / 1.055, 2.4) : R / 12.92);
-        G = 100 * (G > 0.04045? Math.pow ((G + 0.055) / 1.055, 2.4) : G / 12.92);
-        B = 100 * (B > 0.04045? Math.pow ((B + 0.055) / 1.055, 2.4) : B / 12.92);
+        // Generates the next value for i_t. Counts backward if !!neg === true
+        this.next = function (neg) {
+            if (isNotPaused && isStarted) {
+                var dt = (Date.now () - t_i - offset) * (neg? BACKWARD : FORWARD);
 
-        var X = R * 0.4124 + G * 0.3576 + B * 0.1805,
-            Y = R * 0.2126 + G * 0.7152 + B * 0.0722,
-            Z = R * 0.0193 + G * 0.1192 + B * 0.9505;
+                // console.log ('i_t0: ' + i_t);
 
-        return [X, Y, Z];
+                i_t = rk4 (i_t, FPMS, dt, function () {return 0;})[0];
+
+                // console.log ('i_t1: ' + i_t);
+
+                // Does a bound check on the new value of i_t
+                if (i_t < 0) i_t = 0;
+                else if (i_t > n) i_t = n;
+
+                // Sets the new t_i value for the next call
+                t_i = Date.now () - offset;
+            }
+
+            return this;
+        };
+
+        // Returns the current frame number i_t
+        this.frame = function () {return i_t;};
+
+        /**
+         * Performs Runge-Kutta integration for a discrete value dt. Used for normalizing i in animation
+         * across different framerates by different machines.
+         *
+         * Arguments:
+         *     x  - initial position
+         *     v  - initial velocity
+         *     dt - timestep
+         *     a  - acceleration function handler
+         *
+         * Returns:
+         *     [xf, vf] - array containing the next position and velocity
+         */
+        function rk4 (x, v, dt, a) {
+            var C = 0.5 * dt, K = dt / 6;
+
+            var x1 = x,             v1 = v,             a1 = a (x, v, 0),
+                x2 = x + C * v1,    v2 = v + C * a1,    a2 = a (x2, v2, C),
+                x3 = x + C * v2,    v3 = v + C * a2,    a3 = a (x3, v3, C),
+                x4 = x + v3 * dt,   v4 = v + a3 * dt,   a4 = a (x4, v4, dt);
+
+            var xf = x + K * (v1 + 2 * v2 + 2 * v3 + v4),
+                vf = v + K * (a1 + 2 * a2 + 2 * a3 + a4);
+            
+            return [xf, vf];
+        };
+
+        // Returns a string value for this object in the format 'FG: <frame i/n> <is (not )paused> <FPMS*1000fps>'
+        this.toString = function () {
+            return isStarted? 'FG: <frame '+i_t+'/'+n+'> <is '+(isNotPaused?'not ' : '')+'paused> <'+(FPMS * 1000)+'fps>' : 'FG: <>';
+        };
     }
-
-    // Returns the array corresponding to the CIE-L*ab values of the input xyz array
-    function x2L (xyz) {
-        var X = xyz[0] / 95.047,
-            Y = xyz[1] / 100,
-            Z = xyz[2] / 108.883,
-            T = 1 / 3,
-            K = 16 / 116;
-
-        X = X > 0.008856? Math.pow (X, T) : (7.787 * X) + K;
-        Y = Y > 0.008856? Math.pow (Y, T) : (7.787 * Y) + K;
-        Z = Z > 0.008856? Math.pow (Z, T) : (7.787 * Z) + K;
-
-        var L = (116 * Y) - 16,
-            a = 500 * (X - Y),
-            b = 200 * (Y - Z);
-
-        return [L, a, b];
-    }
-
-    // Returns the array corresponding to the xyz values of the input CIE-L*ab array
-    function l2X (Lab) {
-        var Y = (Lab[0] + 16) / 116,
-            X = Lab[1] / 500 + Y,
-            Z = Y - Lab[2] / 200,
-            K = 16 / 116;
-
-        X = 95.047 * ((X * X * X) > 0.008856? X * X * X : (X - K) / 7.787);
-        Y = 100 * ((Y * Y * Y) > 0.008856? Y * Y * Y : (Y - K) / 7.787);
-        Z = 108.883 * ((Z * Z * Z) > 0.008856? Z * Z * Z : (Z - K) / 7.787);
-
-        return [X, Y, Z];
-    }
-
-    // Returns the array corresponding to the rgb values of the input xyz array
-    function x2R (xyz) {
-        var X = xyz[0] / 100,
-            Y = xyz[1] / 100,
-            Z = xyz[2] / 100,
-            T = 1 / 2.4;
-
-        var R = X *  3.2406 + Y * -1.5372 + Z * -0.4986,
-            G = X * -0.9689 + Y *  1.8758 + Z *  0.0415,
-            B = X *  0.0557 + Y * -0.2040 + Z *  1.0570;
-
-        R = 255 * (R > 0.0031308? 1.055 * Math.pow (R, T) - 0.055 : 12.92 * R);
-        G = 255 * (G > 0.0031308? 1.055 * Math.pow (G, T) - 0.055 : 12.92 * G);
-        B = 255 * (B > 0.0031308? 1.055 * Math.pow (B, T) - 0.055 : 12.92 * B);
-
-        return [R, G, B];
-    }
-
-    function toArr (rgba) {
-        // Regex formulas that check for digits and decimals without a zero in front from the rgba string
-        var COLOR_VALUES  = /\d+\.?\d*/g,
-            NONZEROED_DEC = /,\s*\.[^,]+\)$/;
-
-        // Autoconverts matches to arrays and fixes any bad decimals coming from the string
-        var array = rgba.match (COLOR_VALUES);
-        if (rgba.match (NONZEROED_DEC)) array[ALPHA] = '0.' + array[ALPHA];
-
-        // Casts each value to a decimal and returns the array for interpolation
-        for (var i = 0; i < array.length; i++) array[i] = +array[i];
-        return array;
-    }
-
-    return 'rgba(' + r(iRGBA[RED]) + ',' + r(iRGBA[GREEN]) + ',' + r(iRGBA[BLUE]) + ',' + a + ')';
 }
 
 }})();
