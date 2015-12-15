@@ -179,18 +179,18 @@ function Animator () {
      *                     transform).
      *
      * Argument Object Optional Key-Value Pairs:
-     *     interpolTransform  - Function that transforms the p argument of the interpolator to another 
-     *                          value in [0, 1]. Example: function (v) {return 1 - Math.sqrt (1 - v * v);}
-     *     updateArgs         - Array that will hold all of the arguments to be fed to the updater function.
-     *                          Return value from the interpolator function is appended to the end of this
-     *                          array.
-     *     isActive           - True if the animation should be running, false otherwise. Defaults to true.
-     *     animationDirection - True if the animation should be positive (0 -> 1), false otherwise (1 -> 0).
-     *                          Defaults to true.
+     *     interpolTransform - Function that transforms the p argument of the interpolator to another 
+     *                         value in [0, 1]. Example: function (v) {return 1 - Math.sqrt (1 - v * v);}
+     *     updateArgs        - Array that will hold all of the arguments to be fed to the updater function.
+     *                         Return value from the interpolator function is appended to the end of this
+     *                         array.
+     *     isActive          - True if the animation should be running, false otherwise. Defaults to true.
+     *     animateNegatively - True if the animation should be negative (1 -> 0), false otherwise (0 -> 1).
+     *                         Defaults to false.
      */
     this.addAnimation = function (opts) {
         var iA = typeof opts.isActive == 'boolean'? opts.isActive : true,
-            aD = typeof opts.animationDirection == 'boolean'? opts.animationDirection : true,
+            aD = typeof opts.animateNegatively == 'boolean'? opts.animateNegatively : false,
             sV = opts.startValue,
             eV = opts.endValue,
             ip = opts.interpolator,
@@ -198,6 +198,9 @@ function Animator () {
             iT = opts.interpolTransform || function (v) {return v;},
             uA = opts.updateArgs,
             fG = new FrameGenerator (opts.numFrames);
+
+
+        console.log ('animation direction: ' + aD);
             
         // Create a new reference for the updater arguments and append a spot for the output of the interpolator function
         uA = uA? copyUpdateArgumentArray (uA) : [null];
@@ -221,7 +224,10 @@ function Animator () {
     // Begins the animator's update loop. Plays any animations in the immediatelyReplay array.
     this.play = function (immediatelyReplay) {
         if (!loopAnimation) {
-            for (var i = 0; i < immediatelyReplay.length; i++) immediatelyReplay[i][FRAME_GENERATOR].play ();
+            if (immediatelyReplay) {
+                for (var i = 0; i < immediatelyReplay.length; i++) immediatelyReplay[i][FRAME_GENERATOR].play ();
+            }
+            
             loopAnimation = requestAnimationFrame (animatorLoop);
         }
 
@@ -328,7 +334,7 @@ function Animator () {
  */
 function FrameGenerator (numFrames) {
     var n = numFrames,
-        t_i = new Date ().getTime (),
+        t_i = Date.now (),
         i_t = 0,
         offset = 0,         // Offsets new values of time by the amount of time paused
         isStarted = false,  // Used to determine if the frame generator is "started"
@@ -343,7 +349,7 @@ function FrameGenerator (numFrames) {
         if (!isStarted) {
             offset = 0;
             isStarted = true;
-            t_i = new Date ().getTime ();
+            t_i = Date.now ();
         }
 
         return this;
@@ -371,8 +377,8 @@ function FrameGenerator (numFrames) {
     // Unpauses the FrameGenerator
     this.unpause = function () {
         if (!isNotPaused) {
-            // t_i = new Date ().getTime ();
-            if (isStarted) offset += (new Date () - tPaused);
+            // t_i = Date.now ();
+            if (isStarted) offset += (Date.now () - tPaused);
             isNotPaused = true;
         }
 
@@ -388,15 +394,20 @@ function FrameGenerator (numFrames) {
     // Generates the next value for i_t. Counts backward if !!neg === true
     this.next = function (neg) {
         if (isNotPaused && isStarted) {
-            var dt = (new Date ().getTime () - t_i - offset) * (neg? BACKWARD : FORWARD);
+            var dt = (Date.now () - t_i - offset) * (neg? BACKWARD : FORWARD);
+
+            console.log ('i_t0: ' + i_t);
+
             i_t = rk4 (i_t, FPMS, dt, function () {return 0;})[0];
+
+            console.log ('i_t1: ' + i_t);
 
             // Does a bound check on the new value of i_t
             if (i_t < 0) i_t = 0;
             else if (i_t > n) i_t = n;
 
             // Sets the new t_i value for the next call
-            t_i = new Date ().getTime () - offset;
+            t_i = Date.now () - offset;
         }
 
         return this;
@@ -619,7 +630,7 @@ Animator Test Code:
             animationName: 'Test 1',
             startValue: 0,
             endValue: 1,
-            numFrames: 600,
+            numFrames: 10,
             interpolator: function (a, b, p) {
                 return (1 - p) * a + p * b;
             },
@@ -632,7 +643,7 @@ Animator Test Code:
             animationName: 'Test 2',
             startValue: 1,
             endValue: 0,
-            numFrames: 6000,
+            numFrames: 10,
             interpolator: function (a, b, p) {
                 return (1 - p) * a + p * b;
             },
