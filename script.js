@@ -31,7 +31,7 @@ var BG_RGB             = [255, 255, 255],
 // Easy-to-manipulate animation variables
     TXT_ANIMATION   = 'Text Color Animation',
     BG_ANIMATION    = 'Background Color Animation',
-    HOVER_FRAME_DUR = 50,
+    HOVER_FRAME_DUR = 15,
 
 // String concatenations for CSS values
     bgRGBA0    = 'rgba(' + BG_RGB + ',' + IDLE_ALPHA + ')',
@@ -47,7 +47,8 @@ var BG_RGB             = [255, 255, 255],
 
 // Animation and animator construction
     animator      = new Animator (),
-    interpolTrans = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
+    // interpolTrans = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
+    interpolTrans = function (x) {return x;},
     isAct         = false,
 
 // Initial CSS values for the button
@@ -113,24 +114,45 @@ animator.addAnimation (txtAnimation).addAnimation (bgAnimation).start ();
 var hide = false, onButton = false;
 
 // Handles mouseenter animation
-button.mouseenter = function () {
+button.addEventListener ("mouseenter", function () {
     onButton = true;
 
-};
+    // console.log ('mouseenter');
+
+    animator.setAnimationForward (TXT_ANIMATION)
+            .setAnimationForward (BG_ANIMATION)
+            .play ([TXT_ANIMATION, BG_ANIMATION]);
+});
 
 // Handles mouseleave animation
-button.mouseleave = function () {
+button.addEventListener ("mouseleave", function () {
     onButton = false;
-};
+
+    // console.log ('mouseleave');
+
+    animator.setAnimationBackward (TXT_ANIMATION)
+            .setAnimationBackward (BG_ANIMATION)
+            .play ([TXT_ANIMATION, BG_ANIMATION]);
+});
 
 // Handles mousedown animation
-button.mousedown = function () {
+button.addEventListener ("mousedown", function () {
 
-};
+    // console.log ('mousedown');
+
+    animator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
+    button.style.color = bgRGBA1;
+    button.style.border = bgBorder1;
+    button.style.backgroundColor = txtRGBA1;
+});
 
 // Handles mouseup animation and toggle functionality
-button.mouseup = function () {
+button.addEventListener ("mouseup", function () {
     if (onButton) {
+
+        // console.log ('mouseup');
+
+        // Sidebar visibility code
         hide = !hide;
         if (hide) {
             button.innerHTML = 'Show';
@@ -141,8 +163,14 @@ button.mouseup = function () {
             button.innerHTML = 'Hide';
             for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = sCDS[i];
         }
+
+        // Animation handling code
+        // animator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
+        button.style.color = txtRGBA1;
+        button.style.border = txtBorder1;
+        button.style.backgroundColor = bgRGBA1;
     }
-};
+});
 
 /**
  * Takes as input 2 RGBA arrays [0-255, 0-255, 0-255, 0-1] and returns the interpolated
@@ -173,8 +201,6 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
     var p = 1 - q,
         r = Math.round,
 
-        // sRGBA = toArr (startRGBA),
-        // eRGBA = toArr (endRGBA),
         sL = x2L (r2X (sRGBA)),
         eL = x2L (r2X (eRGBA)),
 
@@ -184,8 +210,6 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         a = p * sRGBA[ALPHA] + q * eRGBA[ALPHA],
 
         iRGBA = x2R (l2X ([iL, ia, ib, a]));
-
-        // Returns the array corresponding the xyz values of the input rgb array
     
     // Returns the array corresponding to the XYZ values of the input RGB array
     function r2X (rgb) {
@@ -254,20 +278,6 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
 
         return [R, G, B];
     }
-
-    /*function toArr (rgba) {
-        // Regex formulas that check for digits and decimals without a zero in front from the rgba string
-        var COLOR_VALUES  = /\d+\.?\d*/g,
-            NONZEROED_DEC = /,\s*\.[^,]+\)$/;
-
-        // Autoconverts matches to arrays and fixes any bad decimals coming from the string
-        var array = rgba.match (COLOR_VALUES);
-        if (rgba.match (NONZEROED_DEC)) array[ALPHA] = '0.' + array[ALPHA];
-
-        // Casts each value to a decimal and returns the array for interpolation
-        for (var i = 0; i < array.length; i++) array[i] = +array[i];
-        return array;
-    }*/
 
     return 'rgba(' + r(iRGBA[RED]) + ',' + r(iRGBA[GREEN]) + ',' + r(iRGBA[BLUE]) + ',' + a + ')';
 }
@@ -361,8 +371,8 @@ function Animator () {
             if (!fG.isPaused ()) {
 
                 // Stores the interpolated value in the last entry of the UPDATE_ARGS array
-                var uA = a[UPDATE_ARGS], i = fG.next (a[ANIM_DIRECTION]).frame ();
-                uA[uA.length - 1] = a[INTERPOLATOR](a[START_VALUE], a[END_VALUE], a[INTERPOL_TRANS](i));
+                var uA = a[UPDATE_ARGS], p = fG.next (a[ANIM_DIRECTION]).percent ();
+                uA[uA.length - 1] = a[INTERPOLATOR](a[START_VALUE], a[END_VALUE], a[INTERPOL_TRANS](p));
 
                 // console.log ('update args for "' + animation + '": [' + uA + ']');
 
@@ -422,11 +432,11 @@ function Animator () {
         return this;
     };
 
-    // Begins the animator's update loop. Plays any animations in the immediatelyReplay array.
+    // Begins the animator's update loop. Plays any animations labeled in the immediatelyReplay array by their string name.
     this.play = function (immediatelyReplay) {
         if (!loopAnimation) {
             if (immediatelyReplay) {
-                for (var i = 0; i < immediatelyReplay.length; i++) immediatelyReplay[i][FRAME_GENERATOR].play ();
+                for (var i = 0; i < immediatelyReplay.length; i++) animations[immediatelyReplay[i]][FRAME_GENERATOR].unpause ();
             }
 
             loopAnimation = requestAnimationFrame (animatorLoop);
@@ -482,6 +492,20 @@ function Animator () {
         return this;
     };
 
+    // Resets an animation to its initial state
+    this.resetAnimation = function (animationName) {
+        if (animations[animationName]) animations[animationName][FRAME_GENERATOR].reset ();
+
+        return this;
+    };
+
+    // Sets an animation to its final state
+    this.endAnimation = function (animationName) {
+        if (animations[animationName]) animations[animationName][FRAME_GENERATOR].end ();
+
+        return this;
+    };
+
     // Updates the update function argument array for the specified animation
     this.updateAnimationUpdateArgs = function (animationName, newUpdateArgs) {
         if (animations[animationName]) {
@@ -519,7 +543,8 @@ function Animator () {
      *
      * Public Methods:
      *     start     - [] <Updates to the latest time in milliseconds> (this object)
-     *     reset     - [] <Same as start but also sets the frame count to 0> (this object)
+     *     reset     - [] <Sets the frame count to 0> (this object)
+     *     end       - [] <Sets the frame count to the max frame value> (this object)
      *     pause     - [] <Pauses the internal clock, so .next() is constant> (this object)
      *     unpause   - [] <Unpauses from a paused state> (this object)
      *     isPaused  - [] <Returns whether or not this FrameGenerator is paused> (Boolean)
@@ -550,11 +575,18 @@ function Animator () {
             return this;
         };
 
-        // Resets the FrameGenerator to construction state. Needs .start() to work again
+        // Resets the FrameGenerator to construction state.
         this.reset = function () {
-            isStarted = false;
             offset = 0;
             i_t = 0;
+
+            return this;
+        };
+
+        // Sets the FrameGenerator to the maximum frame value
+        this.end = function () {
+            offset = 0;
+            i_t = n;
 
             return this;
         };
@@ -610,6 +642,9 @@ function Animator () {
 
         // Returns the current frame number i_t
         this.frame = function () {return i_t;};
+
+        // Returns frame information as a percentage from [0, 1]
+        this.percent = function () {return i_t / n;};
 
         /**
          * Performs Runge-Kutta integration for a discrete value dt. Used for normalizing i in animation
