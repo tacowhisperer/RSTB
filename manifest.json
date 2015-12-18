@@ -21,7 +21,7 @@
                 "*://*.reddit.com/*"
             ],
 
-            "js": ["script.js"],
+            "js": ["script.min.js"],
             "run_at": "document_end"
         }
     ]
