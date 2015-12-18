@@ -47,8 +47,7 @@ var BG_RGB             = [255, 255, 255],
 
 // Animation and animator construction
     animator      = new Animator (),
-    // interpolTrans = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
-    interpolTrans = function (x) {return x;},
+    interpolTrans = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
     isAct         = false,
 
 // Initial CSS values for the button
@@ -111,13 +110,18 @@ var txtAnimation = {
 animator.addAnimation (txtAnimation).addAnimation (bgAnimation).start ();
 
 // Hover and click variables
-var hide = false, onButton = false;
+var hide = false, onButton = false, notHoveredYet = true;
 
 // Handles mouseenter animation
 button.addEventListener ("mouseenter", function () {
     onButton = true;
 
-    // console.log ('mouseenter');
+    // Used for starting the hover animation for the first time
+    if (notHoveredYet) {
+        animator.playAnimation (TXT_ANIMATION)
+                .playAnimation (BG_ANIMATION);
+        notHoveredYet = false;
+    }
 
     animator.setAnimationForward (TXT_ANIMATION)
             .setAnimationForward (BG_ANIMATION)
@@ -127,9 +131,6 @@ button.addEventListener ("mouseenter", function () {
 // Handles mouseleave animation
 button.addEventListener ("mouseleave", function () {
     onButton = false;
-
-    // console.log ('mouseleave');
-
     animator.setAnimationBackward (TXT_ANIMATION)
             .setAnimationBackward (BG_ANIMATION)
             .play ([TXT_ANIMATION, BG_ANIMATION]);
@@ -137,9 +138,6 @@ button.addEventListener ("mouseleave", function () {
 
 // Handles mousedown animation
 button.addEventListener ("mousedown", function () {
-
-    // console.log ('mousedown');
-
     animator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
     button.style.color = bgRGBA1;
     button.style.border = bgBorder1;
@@ -149,9 +147,6 @@ button.addEventListener ("mousedown", function () {
 // Handles mouseup animation and toggle functionality
 button.addEventListener ("mouseup", function () {
     if (onButton) {
-
-        // console.log ('mouseup');
-
         // Sidebar visibility code
         hide = !hide;
         if (hide) {
@@ -165,7 +160,6 @@ button.addEventListener ("mouseup", function () {
         }
 
         // Animation handling code
-        // animator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
         button.style.color = txtRGBA1;
         button.style.border = txtBorder1;
         button.style.backgroundColor = bgRGBA1;
@@ -207,9 +201,9 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         iL = p * sL[L_STAR] + q * eL[L_STAR],
         ia = p * sL[A_STAR] + q * eL[A_STAR],
         ib = p * sL[B_STAR] + q * eL[B_STAR],
-        a = p * sRGBA[ALPHA] + q * eRGBA[ALPHA],
+        alphaValue = p * sRGBA[ALPHA] + q * eRGBA[ALPHA],
 
-        iRGBA = x2R (l2X ([iL, ia, ib, a]));
+        iRGBA = x2R (l2X ([iL, ia, ib, alphaValue]));
     
     // Returns the array corresponding to the XYZ values of the input RGB array
     function r2X (rgb) {
@@ -279,7 +273,7 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         return [R, G, B];
     }
 
-    return 'rgba(' + r(iRGBA[RED]) + ',' + r(iRGBA[GREEN]) + ',' + r(iRGBA[BLUE]) + ',' + a + ')';
+    return 'rgba(' + r(iRGBA[RED]) + ',' + r(iRGBA[GREEN]) + ',' + r(iRGBA[BLUE]) + ',' + alphaValue + ')';
 }
 
 // Updates the button
@@ -365,16 +359,12 @@ function Animator () {
             // Start the fG if it is not already started
             if (!fG.isStarted ()) fG.start ();
 
-            // console.log ('animation fG: ' + fG);
-
             // Only update values if the animation if not paused
             if (!fG.isPaused ()) {
 
                 // Stores the interpolated value in the last entry of the UPDATE_ARGS array
                 var uA = a[UPDATE_ARGS], p = fG.next (a[ANIM_DIRECTION]).percent ();
                 uA[uA.length - 1] = a[INTERPOLATOR](a[START_VALUE], a[END_VALUE], a[INTERPOL_TRANS](p));
-
-                // console.log ('update args for "' + animation + '": [' + uA + ']');
 
                 // Call the updator to do whatever it needs to do
                 a[UPDATER].apply (a[UPDATER], uA);
@@ -409,9 +399,6 @@ function Animator () {
             iT = opts.interpolTransform || function (v) {return v;},
             uA = opts.updateArgs,
             fG = new FrameGenerator (opts.numFrames);
-
-
-        // console.log ('animation direction: ' + aD);
             
         // Create a new reference for the updater arguments and append a spot for the output of the interpolator function
         uA = uA? copyUpdateArgumentArray (uA) : [null];
@@ -463,7 +450,8 @@ function Animator () {
     // Enables the specified animation to be updated in the animator's update loop. Does nothing
     // if the animation is not found in the animations object.
     this.playAnimation = function (animationName) {
-        if (animations[animationName]) animations[animationName][IS_ACTIVE] = true;
+        var a = animations[animationName];
+        if (a && a[FRAME_GENERATOR].isPaused ()) a[FRAME_GENERATOR].unpause ();
         
         return this;
     };
@@ -471,7 +459,8 @@ function Animator () {
     // Disables the specified animation from being updated in the animator's update loop. Does
     // nothing if the animation is not found in the animations object.
     this.pauseAnimation = function (animationName) {
-        if (animations[animationName]) animations[animationName][IS_ACTIVE] = false;
+        var a = animations[animationName];
+        if (a && !a[FRAME_GENERATOR].isPaused ()) a[FRAME_GENERATOR].pause ();
         
         return this;
     };
@@ -604,7 +593,6 @@ function Animator () {
         // Unpauses the FrameGenerator
         this.unpause = function () {
             if (!isNotPaused) {
-                // t_i = Date.now ();
                 if (isStarted) offset += (Date.now () - tPaused);
                 isNotPaused = true;
             }
@@ -622,12 +610,7 @@ function Animator () {
         this.next = function (neg) {
             if (isNotPaused && isStarted) {
                 var dt = (Date.now () - t_i - offset) * (neg? BACKWARD : FORWARD);
-
-                // console.log ('i_t0: ' + i_t);
-
                 i_t = rk4 (i_t, FPMS, dt, function () {return 0;})[0];
-
-                // console.log ('i_t1: ' + i_t);
 
                 // Does a bound check on the new value of i_t
                 if (i_t < 0) i_t = 0;
@@ -644,7 +627,7 @@ function Animator () {
         this.frame = function () {return i_t;};
 
         // Returns frame information as a percentage from [0, 1]
-        this.percent = function () {return i_t / n;};
+        this.percent = function () {return 1 - i_t / n;};
 
         /**
          * Performs Runge-Kutta integration for a discrete value dt. Used for normalizing i in animation
@@ -675,7 +658,7 @@ function Animator () {
 
         // Returns a string value for this object in the format 'FG: <frame i/n> <is (not )paused> <FPMS*1000fps>'
         this.toString = function () {
-            return isStarted? 'FG: <frame '+i_t+'/'+n+'> <is '+(isNotPaused?'not ' : '')+'paused> <'+(FPMS * 1000)+'fps>' : 'FG: <>';
+            return isStarted?'FG: <frame '+i_t+'/'+n+'> <is '+(isNotPaused?'not ':'')+'paused> <'+(FPMS*1000)+'fps>':'FG: <>';
         };
     }
 }
