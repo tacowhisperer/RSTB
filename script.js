@@ -54,7 +54,7 @@ var BG_RGB             = [255, 255, 255],
     css = {
         'background-color':    bgRGBA0,
         'border':              txtBorder0,
-        'border-radius':       BORDER_RADIUS,
+        'border-radius':       BORDER_RADIUS + BR_UN,
         'bottom':              BUTTON_MARGIN + BM_UN,
         'color':               txtRGBA0,
         'cursor':              CURSOR_TYPE,
