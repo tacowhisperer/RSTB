@@ -645,7 +645,7 @@ function Animator () {
         function rk4 (x, v, dt, a) {
             var C = 0.5 * dt, K = dt / 6;
 
-            var x1 = x,             v1 = v,             a1 = a (x, v, 0),
+            var x1 = x,             v1 = v,             a1 = a (x1, v, 0),
                 x2 = x + C * v1,    v2 = v + C * a1,    a2 = a (x2, v2, C),
                 x3 = x + C * v2,    v3 = v + C * a2,    a3 = a (x3, v3, C),
                 x4 = x + v3 * dt,   v4 = v + a3 * dt,   a4 = a (x4, v4, dt);
