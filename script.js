@@ -144,20 +144,14 @@ button.addEventListener ("mousedown", function () {
     button.style.backgroundColor = txtRGBA1;
 });
 
-// Handles mouseup animation and toggle functionality
+// Handles mouseup animation, toggle functionality, and setting storage on the local machine
 button.addEventListener ("mouseup", function () {
     if (onButton) {
         // Sidebar visibility code
         hide = !hide;
-        if (hide) {
-            button.innerHTML = 'Show';
-            for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = 'none';
-        }
 
-        else {
-            button.innerHTML = 'Hide';
-            for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = sCDS[i];
-        }
+        // Toggle functionality and setting storage
+        togglerHelper ();
 
         // Animation handling code
         button.style.color = txtRGBA1;
@@ -165,6 +159,32 @@ button.addEventListener ("mouseup", function () {
         button.style.backgroundColor = bgRGBA1;
     }
 });
+
+// Reloads the settings from the previous page load
+chrome.storage.local.get ('isHidden', function (settings) {
+    if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+    else hide = settings.isHidden;
+
+    togglerHelper ();
+});
+
+// Handles toggle functionality and setting storage on the local machine
+function togglerHelper () {
+    if (hide) {
+        button.innerHTML = 'Show';
+        for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = 'none';
+    }
+
+    else {
+        button.innerHTML = 'Hide';
+        for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = sCDS[i];
+    }
+
+    // Option storage handling code
+    chrome.storage.local.set ({isHidden: hide}, function () {
+        if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+    });
+}
 
 /**
  * Takes as input 2 RGBA arrays [0-255, 0-255, 0-255, 0-1] and returns the interpolated
@@ -198,10 +218,10 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         sL = x2L (r2X (sRGBA)),
         eL = x2L (r2X (eRGBA)),
 
-        iL = p * sL[L_STAR] + q * eL[L_STAR],
-        ia = p * sL[A_STAR] + q * eL[A_STAR],
-        ib = p * sL[B_STAR] + q * eL[B_STAR],
-        alphaValue = p * sRGBA[ALPHA] + q * eRGBA[ALPHA],
+        iL = q * sL[L_STAR] + p * eL[L_STAR],
+        ia = q * sL[A_STAR] + p * eL[A_STAR],
+        ib = q * sL[B_STAR] + p * eL[B_STAR],
+        alphaValue = q * sRGBA[ALPHA] + p * eRGBA[ALPHA],
 
         iRGBA = x2R (l2X ([iL, ia, ib, alphaValue]));
     
@@ -627,7 +647,7 @@ function Animator () {
         this.frame = function () {return i_t;};
 
         // Returns frame information as a percentage from [0, 1]
-        this.percent = function () {return 1 - i_t / n;};
+        this.percent = function () {return i_t / n;};
 
         /**
          * Performs Runge-Kutta integration for a discrete value dt. Used for normalizing i in animation
