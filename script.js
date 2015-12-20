@@ -33,6 +33,9 @@ var BG_RGB             = [255, 255, 255],
     BG_ANIMATION    = 'Background Color Animation',
     HOVER_FRAME_DUR = 15,
 
+// Ratio of side to body that will determine whether or not the button should appear
+    SIDE_TO_BODY_RATIO = 0.342,
+
 // String concatenations for CSS values
     bgRGBA0    = 'rgba(' + BG_RGB + ',' + IDLE_ALPHA + ')',
     bgRGBA1    = 'rgba(' + BG_RGB + ',' + ACTIVE_ALPHA + ')',
@@ -80,9 +83,10 @@ var cTSB = document.createElement ('p');
         cTSB.style[prop] = css[prop];
     }
 
-// Add the new button to the DOM and create a new reference to it
+// Add the new button to the DOM, create a new reference to it, and save its CSS display property to the sCDS array
 document.body.appendChild (cTSB);
 var button = document.getElementById (cTSB.id);
+sCDS.push (button.style.display);
 
 // Create the animation objects
 var txtAnimation = {
@@ -110,7 +114,33 @@ var txtAnimation = {
 animator.addAnimation (txtAnimation).addAnimation (bgAnimation).start ();
 
 // Hover and click variables
-var hide = false, onButton = false, notHoveredYet = true;
+var hide = false, onButton = false, notHoveredYet = true, buttonEnabled = false;
+
+// Handles making the button visible or invisible based on the sidebar to HTML body width ratio
+var body = document.getElementsByTagName ('body')[0];
+window.addEventListener ('resize', toggleDisplayability);
+
+function toggleDisplayability () {
+    var broke = false;
+
+    // Checks each side class element to make sure that it is taking enough screen space before enabling the button
+    for (var i = 0; i < rSCA.length; i++) {        
+        if (rSCA[i].offsetWidth === 0 || (rSCA[i].offsetWidth / body.offsetWidth) > SIDE_TO_BODY_RATIO) {
+            buttonEnabled = true;
+            button.style.display = sCDS[sCDS.length - 1];
+            broke = true;
+            break;
+        }
+    }
+
+    if (!broke) {
+        buttonEnabled = false;
+        button.style.display = 'none';
+        animator.pause ();
+    }
+}
+
+toggleDisplayability ();
 
 // Handles mouseenter animation
 button.addEventListener ("mouseenter", function () {
@@ -145,18 +175,24 @@ button.addEventListener ("mousedown", function () {
 });
 
 // Handles mouseup animation, toggle functionality, and setting storage on the local machine
-button.addEventListener ("mouseup", function () {
+var LEFT_CLICK = 1, MIDDLE_CLICK = 2, RIGHT_CLICK = 3;
+button.addEventListener ("mouseup", function (e) {
     if (onButton) {
-        // Sidebar visibility code
-        hide = !hide;
+        if (e.which == LEFT_CLICK) {
+            // Sidebar visibility flag
+            hide = !hide;
 
-        // Toggle functionality and setting storage
-        togglerHelper ();
+            // Toggle functionality and setting storage
+            togglerHelper ();
 
-        // Animation handling code
-        button.style.color = txtRGBA1;
-        button.style.border = txtBorder1;
-        button.style.backgroundColor = bgRGBA1;
+            // Animation handling code
+            button.style.color = txtRGBA1;
+            button.style.border = txtBorder1;
+            button.style.backgroundColor = bgRGBA1;
+
+            // Make the button disappear if not taking up too much screen space
+            toggleDisplayability ();
+        }
     }
 });
 
@@ -169,7 +205,7 @@ chrome.storage.local.get ('isHidden', function (settings) {
 });
 
 // Handles toggle functionality and setting storage on the local machine
-function togglerHelper () {
+function togglerHelper () {if (buttonEnabled) {
     if (hide) {
         button.innerHTML = 'Show';
         for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = 'none';
@@ -184,7 +220,7 @@ function togglerHelper () {
     chrome.storage.local.set ({isHidden: hide}, function () {
         if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
     });
-}
+}}
 
 /**
  * Takes as input 2 RGBA arrays [0-255, 0-255, 0-255, 0-1] and returns the interpolated
