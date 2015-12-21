@@ -13,7 +13,7 @@
  */
 (function () {var rSCA; if (rSCA = document.getElementsByClassName ('side')) {
 
-// Easy-to-manipulate values for the button. Units are separate for potential math operations
+    // Easy-to-manipulate values for the button. Units are separate for potential math operations
 var BG_RGB             = [255, 255, 255],
     TXT_RGB            = [0, 0, 0],
     BUTTON_MARGIN      = 7,          BM_UN  = 'px',
@@ -28,7 +28,7 @@ var BG_RGB             = [255, 255, 255],
     IDLE_ALPHA         = 0.25,
     ACTIVE_ALPHA       = 1.0,
 
-// Easy-to-manipulate RSTB menu variables and CSS values. Units are separate for potential math operations
+    // Easy-to-manipulate RSTB menu variables and CSS values. Units are separate for potential math operations
     MENU_TAB_TEXT       = 'RSTB Options',
     MENU_BG_DAY         = [255, 255, 255],
     MENU_BG_NIGHT       = [0, 0, 0],
@@ -41,15 +41,15 @@ var BG_RGB             = [255, 255, 255],
     MENU_FRAME_DURATION = 15,
     MHW                 = MENU_WIDTH / 2,
 
-// Easy-to-manipulate animation variables
+    // Easy-to-manipulate animation variables
     TXT_ANIMATION   = 'Text Color Animation',
     BG_ANIMATION    = 'Background Color Animation',
     HOVER_FRAME_DUR = 15,
 
-// Ratio of side to body that will determine whether or not the button should appear
+    // Ratio of side to body that will determine whether or not the button should appear
     SIDE_TO_BODY_RATIO = 0.342,
 
-// String concatenations for CSS values
+    // String concatenations for CSS values
     bgRGBA0    = 'rgba(' + BG_RGB + ',' + IDLE_ALPHA + ')',
     bgRGBA1    = 'rgba(' + BG_RGB + ',' + ACTIVE_ALPHA + ')',
     txtRGBA0   = 'rgba(' + TXT_RGB + ',' + IDLE_ALPHA + ')',
@@ -61,12 +61,12 @@ var BG_RGB             = [255, 255, 255],
     txtBorder0 = borderAnim + txtRGBA0,
     txtBorder1 = borderAnim + txtRGBA1,
 
-// Animation and animator construction
+    // Animation and animator construction
     animator      = new Animator (),
     interpolTrans = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
     isAct         = false,
 
-// Initial CSS values for the button
+    // Initial CSS values for the button
     buttonCSS = {
         'background-color':    bgRGBA0,
         'border':              txtBorder0,
@@ -84,7 +84,7 @@ var BG_RGB             = [255, 255, 255],
         'z-index':             Number.MAX_SAFE_INTEGER || 509031400070006
     },
 
-// Points that define the outline of the SVG for the RSTB Menu
+    // Points that define the outline of the SVG for the RSTB Menu
     menuSVGPoints = '0,' + MENU_ARROW_HEIGHT + ' ' +
                     (MHW - MENU_ARROW_HALF_LEN) + ',' + MENU_ARROW_HEIGHT + ' ' +
                     MHW + ',0 ' +
@@ -93,7 +93,7 @@ var BG_RGB             = [255, 255, 255],
                     MENU_WIDTH + ',' + MENU_HEIGHT + ' ' +
                     '0,' + MENU_HEIGHT,
 
-// Variables that require checking for RES
+    // Variables that require checking for RES
     menuCSS,
     rNST,           // Reddit Night Switch Toggle
     isNightMode,
@@ -120,16 +120,11 @@ function pollForRES () {
             isNightMode = rNST.className.match (/enabled$/i)? true : false;
 
             menuSVG   = '<svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '" id="rstbmenusvg"/>' +
-                    '<polygon points="' + menuSVGPoints + '" fill="rgba(' +
-                        (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')" id="rstbmenusvgpolygon"/>' +
-                '</svg>';
+                            '<polygon points="' + menuSVGPoints + '" fill="rgba(' +
+                                (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')" id="rstbmenusvgpolygon"/>' +
+                        '</svg>';
 
-            menuCSS = {
-                'height': (MENU_HEIGHT + MENU_ARROW_HEIGHT) + MH_UN,
-                'position': 'absolute',
-                'width': MENU_WIDTH + MW_UN
-            };
-
+            setUpMenuCSS ();
             resIsInstalled = true;
         }
 
@@ -139,9 +134,26 @@ function pollForRES () {
     // Handles the case where polling failed to detect the RES extension in less than 400ms
     else {
         isNightMode = document.URL.match (/^https?:\/\/nm\./i)? true : false;
-        menuCSS = {
 
+        menuSVG   = '<svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '" id="rstbmenusvg"/>' +
+                        '<polygon points="' + menuSVGPoints + '" fill="rgba(' +
+                            (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')" id="rstbmenusvgpolygon"/>' +
+                    '</svg>';
+
+        setUpMenuCSS ();
+    }
+
+    function setUpMenuCSS () {
+        menuCSS = {
+            'display': 'none',
+            'height': (MENU_HEIGHT + MENU_ARROW_HEIGHT) + MH_UN,
+            'left': 0,               // Will dynamically change with event.clientX (mouse x)
+            'position': 'absolute',
+            'top': 0,                // Will dynamically change with event.clientY (mouse y)
+            'width': MENU_WIDTH + MW_UN
         };
+
+        for (var prop in menuCSS) rstbMenuDiv.style[prop] = menuCSS[prop];
     }
 }
 
