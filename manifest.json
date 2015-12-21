@@ -7,11 +7,11 @@
 
     "description": "Enables a more pleasant experience viewing Reddit on a smaller window by toggling the visibility of the sidebar.",
     "icons": {
-        "16": "16.png",
-        "32": "32.png",
-        "48": "48.png",
-        "64": "64.png",
-        "128": "128.png"
+        "16": "icons/16.png",
+        "32": "icons/32.png",
+        "48": "icons/48.png",
+        "64": "icons/64.png",
+        "128": "icons/128.png"
     },
 
     "author": "Andres Salgado",
@@ -27,9 +27,10 @@
             ],
 
             "js": [
-                "animator.js",
-                "logo_logger.js",
-                "script.js"
+                "scripts/animator.js",
+                "scripts/rgba_interpolator.js",
+                "scripts/logo_logger.js",
+                "scripts/script.js"
             ],
 
             "run_at": "document_end"
