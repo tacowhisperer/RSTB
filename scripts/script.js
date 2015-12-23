@@ -29,16 +29,16 @@ var BG_RGB             = [255, 255, 255],
     ACTIVE_ALPHA       = 1.0,
 
     // Easy-to-manipulate RSTB menu variables and CSS values. Units are separate for potential math operations
-    MENU_TAB_TEXT       = 'RSTB Options',
+    MENU_TAB_TEXT       = 'RSTB',
     MENU_BG_DAY         = [255, 255, 255],
     MENU_BG_NIGHT       = [0, 0, 0],
-    MENU_WIDTH          = 300,       MW_UN = 'px',
+    MENU_WIDTH          = 150,       MW_UN = 'px',
     MENU_HEIGHT         = 80,        MH_UN = 'px',
     MENU_IDLE_ALPHA     = 0,
     MENU_ACTIVE_ALPHA   = 1,
-    MENU_ARROW_HEIGHT   = 40,
-    MENU_ARROW_HALF_LEN = 30,
-    MENU_FRAME_DURATION = 15,
+    MENU_ARROW_HEIGHT   = 20,
+    MENU_ARROW_HALF_LEN = 15,
+    MENU_FRAME_DURATION = 5,
     MHW                 = MENU_WIDTH / 2,
 
     // Easy-to-manipulate animation variables
@@ -94,37 +94,42 @@ var BG_RGB             = [255, 255, 255],
                     '0,' + MENU_HEIGHT,
 
     // Variables that require checking for RES
-    menuCSS,
+    menuDivCSS,
+    menuSVGCSS,
     rNST,           // Reddit Night Switch Toggle
     isNightMode,
-    menuSVG;
-
+    menuSVG,
+    rstbMenuSVG,
+    rstbMenuSVGPolygon;
 
 
 // Create the RSTB tab menu reference and append it to Reddit's tab menu
-var tabMenu = document.getElementsByClassName ('tabmenu')[0], rstbTab = document.createElement ('li');
-rstbTab.innerHTML = '<a href="javascript:void(0)" id="rstbmenulink" class="choice">' + MENU_TAB_TEXT +
-    '<div id="rstbmenudiv" style="display:none;"></div></a>';
+var tabMenu = document.getElementsByClassName ('tabmenu')[0],
+    rstbTab = document.createElement ('li'),
+    rstbMenuDiv = document.createElement ('div');
+
+rstbTab.innerHTML = '<a href="javascript:void(0)" id="rstbmenulink" class="choice">' + MENU_TAB_TEXT + '</a>';
 tabMenu.appendChild (rstbTab);
 
-// Create the RSTB menu reference and add the menu to it
-var rstbMenuDiv = document.getElementById ('rstbmenudiv');
+rstbMenuDiv.setAttribute ('id', 'rstbmenudiv');
+rstbMenuDiv.setAttribute ('style', 'display:none;');
+document.body.appendChild (rstbMenuDiv);
 
-// Polls for RES. Gives up after 400ms
+// Create the RSTB menu reference and add the menu to it
+var rstbMenuLink = document.getElementById ('rstbmenulink');
+rstbMenuDiv = document.getElementById ('rstbmenudiv');
+
+// Polls for RES. Gives up after 200ms
 var timeAtPoll = Date.now (), resIsInstalled = false;
 function pollForRES () {
+
     // Handles the case where the function should continue polling
-    if (Date.now () - timeAtPoll <= 400) {
+    if (Date.now () - timeAtPoll <= 200) {
         rNST = document.getElementById ('nightSwitchToggle');
         if (rNST) {
             isNightMode = rNST.className.match (/enabled$/i)? true : false;
 
-            menuSVG   = '<svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '" id="rstbmenusvg"/>' +
-                            '<polygon points="' + menuSVGPoints + '" fill="rgba(' +
-                                (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')" id="rstbmenusvgpolygon"/>' +
-                        '</svg>';
-
-            setUpMenuCSS ();
+            setUpRSTBMenu ();
             resIsInstalled = true;
         }
 
@@ -134,27 +139,103 @@ function pollForRES () {
     // Handles the case where polling failed to detect the RES extension in less than 400ms
     else {
         isNightMode = document.URL.match (/^https?:\/\/nm\./i)? true : false;
-
-        menuSVG   = '<svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '" id="rstbmenusvg"/>' +
-                        '<polygon points="' + menuSVGPoints + '" fill="rgba(' +
-                            (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')" id="rstbmenusvgpolygon"/>' +
-                    '</svg>';
-
-        setUpMenuCSS ();
+        setUpRSTBMenu ();
     }
 
-    function setUpMenuCSS () {
-        menuCSS = {
+    function setUpRSTBMenu () {
+        var xml = ' xmlns="http://www.w3.org/2000/svg"',
+        menuSVG   = '<svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '" id="rstbmenusvg"' + xml + '>' +
+                        '<g>' +
+                            '<polygon points="' + menuSVGPoints + '" fill="rgba(' +
+                              (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')" id="rstbmenusvgpolygon"/>' +
+                        '</g>' +
+                    '</svg>';
+
+        menuDivCSS = {
             'display': 'none',
             'height': (MENU_HEIGHT + MENU_ARROW_HEIGHT) + MH_UN,
             'left': 0,               // Will dynamically change with event.clientX (mouse x)
-            'position': 'absolute',
+            'padding': 0,
+            'pointer': 'default !important',
+            'position': 'fixed',
             'top': 0,                // Will dynamically change with event.clientY (mouse y)
-            'width': MENU_WIDTH + MW_UN
+            'width': MENU_WIDTH + MW_UN,
+            'z-index': Number.MAX_SAFE_INTEGER || Number.MAX_VALUE
         };
 
-        for (var prop in menuCSS) rstbMenuDiv.style[prop] = menuCSS[prop];
+        menuSVGCSS = {
+            'svg': {
+                'left': 0,
+                'margin': 0,
+                'pointer': 'default',
+                'top': 0
+            },
+
+            'polygon': {
+
+            }
+        };
+
+        for (var prop in menuDivCSS) rstbMenuDiv.style[prop] = menuDivCSS[prop];
+        rstbMenuDiv.innerHTML = menuSVG;
+
+        rstbMenuSVG = document.getElementById ('rstbmenudiv');
+        rstbMenuSVGPolygon = document.getElementById ('rstbmenusvgpolygon');
+
+        for (var prop in menuSVGCSS.svg) rstbMenuSVG.style[prop] = menuSVGCSS.svg[prop];
+        for (var prop in menuSVGCSS.polygon) rstbMenuSVGPolygon.style[prop] = menuSVGCSS.polygon[prop];
+
+
+        // Set up click functionality for the RSTB Tab option
+        rstbMenuLink.addEventListener ('mousedown', function (e) {
+            if (e.target == rstbMenuLink) {
+                displayMenu (e.clientX, e.clientY);
+            }
+
+            else if (e.target == rstbMenuSVG) {
+                // Stop the mousedown event from bubbling to the RSTB Menu Link
+                e.stopPropagation ();
+            }
+        });
+
+        // Hide the RSTB Menu if the user scrolls, resizes the window, or clicks the main body
+        var listingChooser = document.getElementsByClassName ('listing-chooser')[0];
+        window.addEventListener ('scroll', hideMenu);
+        window.addEventListener ('resize', hideMenu);
+        listingChooser.addEventListener ('mousedown', hideMenu);
     }
+}
+
+pollForRES ();
+
+// Animates the menu into visibility
+function displayMenu (left, top) {
+    isNightMode  =  resIsInstalled? 
+                        rNST.className.match (/enabled$/i)? true : false :
+                        document.URL.match (/^https?:\/\/nm\./i)? true : false;
+
+    var rgba = 'rgba(' + (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + ACTIVE_ALPHA + ')',
+        linkBottom = rstbMenuLink.getBoundingClientRect ().bottom;
+
+    rstbMenuDiv.style.top  = linkBottom + MH_UN;
+    rstbMenuDiv.style.left = (left - MHW) + MW_UN;
+    rstbMenuDiv.style.display = 'block';
+    rstbMenuSVGPolygon.setAttribute ('fill', rgba);
+}
+
+// Animates the menu away from visibility
+function hideMenu (e) {
+
+    console.log('hide!');
+
+    isNightMode  =  resIsInstalled?
+                        rNST.className.match (/enabled$/i)? true : false :
+                        document.URL.match (/^https?:\/\/nm\./i)? true : false;
+
+    var rgba = 'rgba(' + (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')';
+
+    rstbMenuDiv.style.display = 'none';
+    rstbMenuSVGPolygon.setAttribute ('fill', rgba);
 }
 
 
@@ -217,7 +298,7 @@ function toggleDisplayability () {
 
     // Checks each side class element to make sure that it is taking enough screen space before enabling the button
     for (var i = 0; i < rSCA.length; i++) {        
-        if (rSCA[i].offsetWidth === 0 || (rSCA[i].offsetWidth / body.offsetWidth) > SIDE_TO_BODY_RATIO) {
+        if (rSCA[i].offsetWidth === 0 || (rSCA[i].offsetWidth / body.offsetWidth) > SIDE_TO_BODY_RATIO || rSCA.style.display != 'none') {
             buttonEnabled = true;
             button.style.display = sCDS[sCDS.length - 1];
             broke = true;
@@ -273,9 +354,6 @@ button.addEventListener ("mousedown", function () {
 
 });
 
-function displayMenu () {
-
-}
 
 // Handles mouseup animation, toggle functionality, and setting storage on the local machine. Cancels firing the menu if
 // mouseup before critical time.
