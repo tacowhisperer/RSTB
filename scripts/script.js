@@ -30,10 +30,13 @@ var BG_RGB             = [255, 255, 255],
 
     // Easy-to-manipulate RSTB menu variables and CSS values. Units are separate for potential math operations
     MENU_TAB_TEXT       = 'RSTB',
-    MENU_BG_DAY         = [255, 255, 255],
-    MENU_BG_NIGHT       = [0, 0, 0],
-    MENU_WIDTH          = 150,       MW_UN = 'px',
-    MENU_HEIGHT         = 80,        MH_UN = 'px',
+    MENU_BG_DAY         = [243, 243, 243],
+    MENU_STROKE_DAY     = [119, 119, 119],
+    MENU_BG_NIGHT       = [119, 119, 119],
+    MENU_STROKE_NIGHT   = [243, 243, 243],
+    MENU_STROKE_WIDTH   = 1,         MSW_UN = 'px',
+    MENU_WIDTH          = 150,       MW_UN  = 'px',
+    MENU_HEIGHT         = 80,        MH_UN  = 'px',
     MENU_IDLE_ALPHA     = 0,
     MENU_ACTIVE_ALPHA   = 1,
     MENU_ARROW_HEIGHT   = 20,
@@ -96,15 +99,20 @@ var BG_RGB             = [255, 255, 255],
     // Variables that require checking for RES
     menuDivCSS,
     menuSVGCSS,
+    menuSpacerCSS,
+    menuDTOCSS,
     rNST,           // Reddit Night Switch Toggle
     isNightMode,
     menuSVG,
     rstbMenuSVG,
-    rstbMenuSVGPolygon;
+    rstbMenuSVGPolygon,
+    rstbMenuSpacer,
+    rstbMenuDisplayabilityToggleOption;
 
 
 // Create the RSTB tab menu reference and append it to Reddit's tab menu
-var tabMenu = document.getElementsByClassName ('tabmenu')[0],
+var redditHeader = document.getElementById ('header'),
+    tabMenu = document.getElementsByClassName ('tabmenu')[0],
     rstbTab = document.createElement ('li'),
     rstbMenuDiv = document.createElement ('div');
 
@@ -144,47 +152,67 @@ function pollForRES () {
 
     function setUpRSTBMenu () {
         var xml = ' xmlns="http://www.w3.org/2000/svg"',
-        menuSVG   = '<svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '" id="rstbmenusvg"' + xml + '>' +
+        menuSVG   = '<div id="rstbmenusvg"><svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '"' + xml + '>' +
                         '<g>' +
                             '<polygon points="' + menuSVGPoints + '" fill="rgba(' +
                               (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')" id="rstbmenusvgpolygon"/>' +
                         '</g>' +
-                    '</svg>';
+                    '</svg></div>',
+
+        rstbMenuSpacerHTML = '<div id="rstbmenuspacer"></div>',
+        rstbMenuDisplayabilityToggleOptionHTML  =   '<p id="rstbmenudisplayabilitytoggleoption">Hide when wide enough: ' +
+                                                        '<span id="rstbmenudisplayabilitytogglebutton"></span>' +
+                                                    '</p>';
 
         menuDivCSS = {
-            'display': 'none',
-            'height': (MENU_HEIGHT + MENU_ARROW_HEIGHT) + MH_UN,
+            'height': MENU_HEIGHT + MH_UN,
             'left': 0,               // Will dynamically change with event.clientX (mouse x)
-            'padding': 0,
-            'pointer': 'default !important',
-            'position': 'fixed',
             'top': 0,                // Will dynamically change with event.clientY (mouse y)
             'width': MENU_WIDTH + MW_UN,
-            'z-index': Number.MAX_SAFE_INTEGER || Number.MAX_VALUE
+            'z-index': 100
         };
 
         menuSVGCSS = {
             'svg': {
                 'left': 0,
                 'margin': 0,
-                'pointer': 'default',
-                'top': 0
+                'padding': 0,
+                'position': 'fixed',
+                'top': 0,
             },
 
             'polygon': {
-
+                // 'cursor': 'pointer',
+                'stroke': 'rgba(' + (isNightMode? MENU_STROKE_NIGHT : MENU_STROKE_DAY) + ',' + IDLE_ALPHA + ')',
+                'stroke-width': MENU_STROKE_WIDTH + MSW_UN
             }
         };
 
+        menuSpacerCSS = {
+            'height': MENU_ARROW_HEIGHT + MH_UN,
+            'margin': 0,
+            'padding': 0,
+            'top': 0,
+            'width': '100%'
+        };
+
+        menuDTOCSS = {
+
+        };
+
         for (var prop in menuDivCSS) rstbMenuDiv.style[prop] = menuDivCSS[prop];
-        rstbMenuDiv.innerHTML = menuSVG;
+        rstbMenuDiv.innerHTML = menuSVG + rstbMenuSpacerHTML + rstbMenuDisplayabilityToggleOptionHTML;
 
         rstbMenuSVG = document.getElementById ('rstbmenudiv');
         rstbMenuSVGPolygon = document.getElementById ('rstbmenusvgpolygon');
+        rstbMenuSpacer = document.getElementById ('rstbmenuspacer');
+        rstbMenuDisplayabilityToggleOption = document.getElementById ('rstbmenudisplayabilitytoggleoption');
+        rstbMenuDisplayabilityToggleButton = document.getElementById ('rstbmenudisplayabilitytogglebutton');
 
         for (var prop in menuSVGCSS.svg) rstbMenuSVG.style[prop] = menuSVGCSS.svg[prop];
         for (var prop in menuSVGCSS.polygon) rstbMenuSVGPolygon.style[prop] = menuSVGCSS.polygon[prop];
 
+        for (var prop in menuSpacerCSS) rstbMenuSpacer.style[prop] = menuSpacerCSS[prop];
 
         // Set up click functionality for the RSTB Tab option
         rstbMenuLink.addEventListener ('mousedown', function (e) {
@@ -202,7 +230,7 @@ function pollForRES () {
         var listingChooser = document.getElementsByClassName ('listing-chooser')[0];
         window.addEventListener ('scroll', hideMenu);
         window.addEventListener ('resize', hideMenu);
-        listingChooser.addEventListener ('mousedown', hideMenu);
+        if (listingChooser) listingChooser.addEventListener ('mousedown', hideMenu);
     }
 }
 
@@ -215,27 +243,28 @@ function displayMenu (left, top) {
                         document.URL.match (/^https?:\/\/nm\./i)? true : false;
 
     var rgba = 'rgba(' + (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + ACTIVE_ALPHA + ')',
-        linkBottom = rstbMenuLink.getBoundingClientRect ().bottom;
+        topValue = Math.max (redditHeader.offsetHeight, tabMenu.getBoundingClientRect ().bottom) - window.scrollY;
 
-    rstbMenuDiv.style.top  = linkBottom + MH_UN;
+    rstbMenuDiv.style.top  = topValue + MH_UN;
     rstbMenuDiv.style.left = (left - MHW) + MW_UN;
+    rstbMenuDiv.style.position = 'fixed';
     rstbMenuDiv.style.display = 'block';
+
     rstbMenuSVGPolygon.setAttribute ('fill', rgba);
+    rstbMenuSVGPolygon.style.stroke = 'rgba(' + (isNightMode? MENU_STROKE_NIGHT : MENU_STROKE_DAY) + ',' + ACTIVE_ALPHA + ')';
 }
 
 // Animates the menu away from visibility
 function hideMenu (e) {
-
-    console.log('hide!');
-
     isNightMode  =  resIsInstalled?
                         rNST.className.match (/enabled$/i)? true : false :
                         document.URL.match (/^https?:\/\/nm\./i)? true : false;
 
     var rgba = 'rgba(' + (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')';
-
     rstbMenuDiv.style.display = 'none';
+
     rstbMenuSVGPolygon.setAttribute ('fill', rgba);
+    rstbMenuSVGPolygon.style.stroke = 'rgba(' + (isNightMode? MENU_STROKE_NIGHT : MENU_STROKE_DAY) + ',' + IDLE_ALPHA + ')';
 }
 
 
@@ -297,8 +326,12 @@ function toggleDisplayability () {
     var broke = false;
 
     // Checks each side class element to make sure that it is taking enough screen space before enabling the button
-    for (var i = 0; i < rSCA.length; i++) {        
-        if (rSCA[i].offsetWidth === 0 || (rSCA[i].offsetWidth / body.offsetWidth) > SIDE_TO_BODY_RATIO || rSCA.style.display != 'none') {
+    for (var i = 0; i < rSCA.length; i++) {
+        var check1 = rSCA[i].style.display == 'none',
+            check2 = rSCA[i].getBoundingClientRect ().left / body.getBoundingClientRect ().right >= 1 - SIDE_TO_BODY_RATIO,
+            check3 = (rSCA[i].offsetWidth / body.offsetWidth) >= SIDE_TO_BODY_RATIO;
+
+        if (check1 || check3) {
             buttonEnabled = true;
             button.style.display = sCDS[sCDS.length - 1];
             broke = true;
@@ -342,15 +375,11 @@ button.addEventListener ("mouseleave", function () {
 });
 
 // Handles mousedown animation
-var timeAtDown = 0;
 button.addEventListener ("mousedown", function () {
     animator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
     button.style.color = bgRGBA1;
     button.style.border = bgBorder1;
     button.style.backgroundColor = txtRGBA1;
-
-    // Capture the time at mouse down and fire the menu
-    timeAtDown = Date.now ();
 
 });
 
