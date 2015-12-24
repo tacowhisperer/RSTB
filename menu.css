@@ -1,0 +1,14 @@
+#rstbmenudiv {
+	display: none;
+	padding: 0;
+	position: fixed;
+}
+
+#rstbmenusvg {
+	position: fixed;
+	z-index: 101;
+}
+
+#rstbmenudisplayabilitytoggleoption {
+	z-index: 102;
+}
