@@ -107,3 +107,9 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
 
     return 'rgba(' + r(iRGBA[RED]) + ',' + r(iRGBA[GREEN]) + ',' + r(iRGBA[BLUE]) + ',' + alphaValue + ')';
 }
+
+function positionInterpolate (start, stop, q) {
+    var p = 1 - q;
+
+    return q * start + p * stop;
+}
