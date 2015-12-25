@@ -35,7 +35,7 @@
 }
 
 #rstbmenudisplayabilitytogglebuttonwrapper {
-	background-color: rgb(187,157,157);
+	background-color: rgba(187,157,157,1);
 	border: 1px solid rgb(40,40,40);
 	border-radius: 7px;
 	cursor: pointer;
