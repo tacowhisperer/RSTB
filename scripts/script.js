@@ -50,10 +50,15 @@ var BG_RGB             = [255, 255, 255],
     BG_ANIMATION    = 'Background Color Animation',
     HOVER_FRAME_DUR = 15,
 
+    MENU_DISP_BG_ANIMATION = 'Displayability Background Animation',
+    MENU_NOB_BG_ANIMATION  = 'Displayability Button Nob Background Animation',
+    MENU_NOB_POSITION_ANIMATION = 'Displayability Button Nob Position Animation',
+    MENU_TOGGLE_FRAME_DUR  = 8,
+
     // Ratio of side to body that will determine whether or not the button should appear
     SIDE_TO_BODY_RATIO = 0.342,
 
-    // String concatenations for CSS values
+    // String concatenations for main button CSS values
     bgRGBA0    = 'rgba(' + BG_RGB + ',' + IDLE_ALPHA + ')',
     bgRGBA1    = 'rgba(' + BG_RGB + ',' + ACTIVE_ALPHA + ')',
     txtRGBA0   = 'rgba(' + TXT_RGB + ',' + IDLE_ALPHA + ')',
@@ -65,10 +70,11 @@ var BG_RGB             = [255, 255, 255],
     txtBorder0 = borderAnim + txtRGBA0,
     txtBorder1 = borderAnim + txtRGBA1,
 
-    // Animation and animator construction
-    animator      = new Animator (),
-    interpolTrans = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
-    isAct         = false,
+    // Animation object constructions
+    hoverAnimator   = new Animator (),
+    displayAnimator = new Animator (),
+    interpolTrans   = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
+    isAct           = false,
 
     // Initial CSS values for the button
     buttonCSS = {
@@ -108,7 +114,10 @@ var BG_RGB             = [255, 255, 255],
     rstbMenuSVG,
     rstbMenuSVGPolygon,
     rstbMenuSpacer,
-    rstbMenuDisplayabilityToggleOption;
+    rstbMenuDisplayabilityToggleOption,
+    rstbMenuDisplayabilityToggleButtonWrapper,
+    rstbMenuDisplayabilityToggleButtonNob,
+    rstbMenuDisplayabilityAnimatingForward = false;
 
 
 // Create the RSTB tab menu reference and append it to Reddit's tab menu
@@ -213,22 +222,50 @@ function pollForRES () {
         rstbMenuSpacer = document.getElementById ('rstbmenuspacer');
         rstbMenuDisplayabilityToggleOption = document.getElementById ('rstbmenudisplayabilitytoggleoption');
         rstbMenuDisplayabilityToggleButton = document.getElementById ('rstbmenudisplayabilitytogglebutton');
+        rstbMenuDisplayabilityToggleButtonWrapper = document.getElementById ('rstbmenudisplayabilitytogglebuttonwrapper');
+        rstbMenuDisplayabilityToggleButtonNob = document.getElementById ('rstbmenudisplayabilitytogglebuttonnob');
 
         for (var prop in menuSVGCSS.svg) rstbMenuSVG.style[prop] = menuSVGCSS.svg[prop];
         for (var prop in menuSVGCSS.polygon) rstbMenuSVGPolygon.style[prop] = menuSVGCSS.polygon[prop];
 
         for (var prop in menuSpacerCSS) rstbMenuSpacer.style[prop] = menuSpacerCSS[prop];
 
-        // Set up click functionality for the RSTB Tab option
+        // Set up click functionality for the RSTB Tab Menu
         rstbMenuLink.addEventListener ('mousedown', function (e) {
             if (e.target == rstbMenuLink) {
                 displayMenu (e.clientX, e.clientY);
             }
+        });
 
-            else if (e.target == rstbMenuSVG) {
-                // Stop the mousedown event from bubbling to the RSTB Menu Link
-                e.stopPropagation ();
+        // Set up menu displayability option functionality in the RSTB Menu
+        rstbMenuDisplayabilityToggleButtonWrapper.addEventListener ('mousedown', function () {
+            if (notEnabledYet) {
+                displayAnimator .playAnimation (rstbMenuBGAnimation)
+                                .playAnimation (rstbMenuNobBGAnimation)
+                                .playAnimation (rstbMenuNobPosAnimation);
+                notEnabledYet = false;
             }
+
+            rstbMenuDisplayabilityAnimatingForward = !rstbMenuDisplayabilityAnimatingForward;
+            if (rstbMenuDisplayabilityAnimatingForward) {
+                displayAnimator .setAnimationForward (rstbMenuBGAnimation)
+                                .setAnimationForward (rstbMenuNobBGAnimation)
+                                .setAnimationForward (rstbMenuNobPosAnimation);
+            }
+
+            else {
+                displayAnimator .setAnimationBackward (rstbMenuBGAnimation)
+                                .setAnimationBackward (rstbMenuNobBGAnimation)
+                                .setAnimationBackward (rstbMenuNobPosAnimation);
+            }
+
+            // Stores the new setting so that it is remembered on the next page load
+            buttonEnablerEnabled = !buttonEnablerEnabled;
+            chrome.storage.local.set ({enablerEnabled:buttonEnablerEnabled}, function () {
+                if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+            });
+
+            toggleDisplayability ();
         });
 
         // Hide the RSTB Menu if the user scrolls, resizes the window, or clicks the main body
@@ -239,7 +276,6 @@ function pollForRES () {
     }
 }
 
-pollForRES ();
 
 // Animates the menu into visibility
 function displayMenu (left, top) {
@@ -316,43 +352,86 @@ var txtAnimation = {
         isActive:          isAct
     };
 
-animator.addAnimation (txtAnimation).addAnimation (bgAnimation).start ();
+hoverAnimator.addAnimation (txtAnimation).addAnimation (bgAnimation).start ();
+
+var rstbMenuBGAnimation = {
+        animationName:     MENU_DISP_BG_ANIMATION,
+        startValue:        [187, 157, 157, ACTIVE_ALPHA],    // Ported straight from menu.css
+        endValue:          [157, 187, 157, ACTIVE_ALPHA],
+        numFrames:         MENU_FRAME_DURATION,
+        interpolator:      rgbaInterpolate,
+        updater:           rstbDisplayabilityBGUpdate,
+        interpolTransform: interpolTrans,
+        isActive:          isAct
+    },
+
+    rstbMenuNobBGAnimation = {
+        animationName:     MENU_NOB_BG_ANIMATION,
+        startValue:        [125, 95, 95, ACTIVE_ALPHA],      // Ported straight from menu.css
+        endValue:          [95, 125, 95, ACTIVE_ALPHA],
+        numFrames:         MENU_FRAME_DURATION,
+        interpolator:      rgbaInterpolate,
+        updater:           rstbDisplayabilityNobBGUpdate,
+        interpolTransform: interpolTrans,
+        isActive:          isAct
+    },
+
+    rstbMenuNobPosAnimation = {
+        animationName:     MENU_NOB_POSITION_ANIMATION,
+        startValue:        2,                                // Ported straight from menu.css
+        endValue:          18,
+        numFrames:         MENU_FRAME_DURATION,
+        interpolator:      positionInterpolate,
+        updater:           rstbDisplayabilityNobPosUpdate,
+        interpolTransform: interpolTrans,
+        isActive:          isAct
+    };
+
+displayAnimator .addAnimation (rstbMenuBGAnimation)
+                .addAnimation (rstbMenuNobBGAnimation)
+                .addAnimation (rstbMenuNobPosAnimation).start ();
 
 
-
-// Hover and click variables
-var hide = false, onButton = false, notHoveredYet = true, buttonEnabled = false;
+// Hover, click, and menu option variables
+var hide = false,
+    onButton = false, 
+    notHoveredYet = true, 
+    notEnabledYet = true, 
+    buttonEnablerEnabled = false, 
+    buttonEnabled = false;
 
 // Handles making the button visible or invisible based on the sidebar to HTML body width ratio
 var body = document.getElementsByTagName ('body')[0];
 window.addEventListener ('resize', toggleDisplayability);
 
 function toggleDisplayability () {
-    var broke = false;
+    if (buttonEnablerEnabled) {
+        var broke = false;
 
-    // Checks each side class element to make sure that it is taking enough screen space before enabling the button
-    for (var i = 0; i < rSCA.length; i++) {
-        var check1 = rSCA[i].style.display == 'none',
-            check2 = rSCA[i].getBoundingClientRect ().left / body.getBoundingClientRect ().right >= 1 - SIDE_TO_BODY_RATIO,
-            check3 = (rSCA[i].offsetWidth / body.offsetWidth) >= SIDE_TO_BODY_RATIO;
+        // Checks each side class element to make sure that it is taking enough screen space before enabling the button
+        for (var i = 0; i < rSCA.length; i++) {
+            var check1 = rSCA[i].style.display == 'none',
+                check2 = rSCA[i].getBoundingClientRect ().left / body.getBoundingClientRect ().right >= 1 - SIDE_TO_BODY_RATIO,
+                check3 = (rSCA[i].offsetWidth / body.offsetWidth) >= SIDE_TO_BODY_RATIO;
 
-        if (check1 || check3) {
-            buttonEnabled = true;
-            button.style.display = sCDS[sCDS.length - 1];
-            broke = true;
-            break;
+            if (check1 || check3) {
+                buttonEnabled = true;
+                button.style.display = sCDS[sCDS.length - 1];
+                broke = true;
+                break;
+            }
         }
-    }
 
-    if (!broke) {
-        buttonEnabled = false;
-        button.style.display = 'none';
-        animator.pause ();
+        if (!broke) {
+            buttonEnabled = false;
+            button.style.display = 'none';
+            hoverAnimator.pause ();
+        }
+    } else {
+        // Make sure that the button is always visible otherwise
+        buttonEnabled = true;
     }
 }
-
-toggleDisplayability ();
-
 
 
 // Handles mouseenter animation
@@ -361,12 +440,12 @@ button.addEventListener ("mouseenter", function () {
 
     // Used for starting the hover animation for the first time
     if (notHoveredYet) {
-        animator.playAnimation (TXT_ANIMATION)
+        hoverAnimator.playAnimation (TXT_ANIMATION)
                 .playAnimation (BG_ANIMATION);
         notHoveredYet = false;
     }
 
-    animator.setAnimationForward (TXT_ANIMATION)
+    hoverAnimator.setAnimationForward (TXT_ANIMATION)
             .setAnimationForward (BG_ANIMATION)
             .play ([TXT_ANIMATION, BG_ANIMATION]);
 });
@@ -374,14 +453,14 @@ button.addEventListener ("mouseenter", function () {
 // Handles mouseleave animation
 button.addEventListener ("mouseleave", function () {
     onButton = false;
-    animator.setAnimationBackward (TXT_ANIMATION)
+    hoverAnimator.setAnimationBackward (TXT_ANIMATION)
             .setAnimationBackward (BG_ANIMATION)
             .play ([TXT_ANIMATION, BG_ANIMATION]);
 });
 
 // Handles mousedown animation
 button.addEventListener ("mousedown", function () {
-    animator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
+    hoverAnimator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
     button.style.color = bgRGBA1;
     button.style.border = bgBorder1;
     button.style.backgroundColor = txtRGBA1;
@@ -412,13 +491,26 @@ button.addEventListener ("mouseup", function (e) {
     }
 });
 
-// Reloads the settings from the previous page load
+
+
+// Reloads the isHidden setting from the previous page load
 chrome.storage.local.get ('isHidden', function (settings) {
     if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
     else hide = settings.isHidden;
 
     togglerHelper ();
 });
+
+// Reloads the buttonEnablerEnabled setting from the previous page load
+chrome.storage.local.get ('enablerEnabled', function (settings) {
+    if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+    else buttonEnablerEnabled = settings.enablerEnabled;
+
+    rstbMenuDisplayabilityAnimatingForward = buttonEnablerEnabled? true : false;
+    toggleDisplayability ();
+});
+
+
 
 // Handles toggle functionality and setting storage on the local machine
 function togglerHelper () {if (buttonEnabled) {
@@ -450,6 +542,27 @@ function txtRGBAUpdate (rgba) {
 function bgRGBAUpdate (rgba) {
     button.style.backgroundColor = rgba;
 }
+
+// Updates the option background color
+function rstbDisplayabilityBGUpdate (rgba) {
+    // Placed inside of undefined check because of polling
+    if (rstbMenuDisplayabilityToggleButtonWrapper) rstbMenuDisplayabilityToggleButtonWrapper.style.backgroundColor = rgba;
+}
+
+// Updates the option nob background color
+function rstbDisplayabilityNobBGUpdate (rgba) {
+    // Placed inside of undefined check because of polling
+    if (rstbMenuDisplayabilityToggleButtonNob) rstbMenuDisplayabilityToggleButtonNob.style.backgroundColor = rgba;
+}
+
+// Updates the option button nob position
+function rstbDisplayabilityNobPosUpdate (pos) {
+    // Placed inside of undefined check because of polling
+    if (rstbMenuDisplayabilityToggleButtonNob) rstbMenuDisplayabilityToggleButtonNob.style.left = pos;
+}
+
+// Polls for RES after everything has been defined
+pollForRES ();
 
 // Prints the RSTB logo to the Chrome console in an awesome assortment of colors
 logRSTBLogo ();
