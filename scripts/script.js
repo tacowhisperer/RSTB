@@ -30,17 +30,18 @@ var BG_RGB             = [255, 255, 255],
 
     // Easy-to-manipulate RSTB menu variables and CSS values. Units are separate for potential math operations
     MENU_TAB_TEXT       = 'RSTB',
+    MENU_TD_TEXT        = 'Hide for Widescreen: ',
     MENU_BG_DAY         = [243, 243, 243],
-    MENU_STROKE_DAY     = [119, 119, 119],
-    MENU_BG_NIGHT       = [119, 119, 119],
+    MENU_STROKE_DAY     = [22, 22, 22],
+    MENU_BG_NIGHT       = [22, 22, 22],
     MENU_STROKE_NIGHT   = [243, 243, 243],
-    MENU_STROKE_WIDTH   = 1,         MSW_UN = 'px',
-    MENU_WIDTH          = 150,       MW_UN  = 'px',
-    MENU_HEIGHT         = 80,        MH_UN  = 'px',
+    MENU_STROKE_WIDTH   = 0.5,       MSW_UN = 'px',
+    MENU_WIDTH          = 175,       MW_UN  = 'px',
+    MENU_HEIGHT         = 45,        MH_UN  = 'px',
     MENU_IDLE_ALPHA     = 0,
     MENU_ACTIVE_ALPHA   = 1,
-    MENU_ARROW_HEIGHT   = 20,
-    MENU_ARROW_HALF_LEN = 15,
+    MENU_ARROW_HEIGHT   = 10,
+    MENU_ARROW_HALF_LEN = 7.5,
     MENU_FRAME_DURATION = 5,
     MHW                 = MENU_WIDTH / 2,
 
@@ -152,7 +153,8 @@ function pollForRES () {
 
     function setUpRSTBMenu () {
         var xml = ' xmlns="http://www.w3.org/2000/svg"',
-        menuSVG   = '<div id="rstbmenusvg"><svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '"' + xml + '>' +
+        menuSVG   = '<div id="rstbmenusvg"><svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '"' + xml +
+                      'stroke-linejoin="miter">' +
                         '<g>' +
                             '<polygon points="' + menuSVGPoints + '" fill="rgba(' +
                               (isNightMode? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')" id="rstbmenusvgpolygon"/>' +
@@ -160,9 +162,12 @@ function pollForRES () {
                     '</svg></div>',
 
         rstbMenuSpacerHTML = '<div id="rstbmenuspacer"></div>',
-        rstbMenuDisplayabilityToggleOptionHTML  =   '<p id="rstbmenudisplayabilitytoggleoption">Hide when wide enough: ' +
-                                                        '<span id="rstbmenudisplayabilitytogglebutton"></span>' +
-                                                    '</p>';
+        rstbMenuDisplayabilityToggleOptionHTML  =   '<div id="rstbmenudisplayabilitytoggleoption" class="rstbmenuoption">' +
+                                                        MENU_TD_TEXT + '<div id="rstbmenudisplayabilitytogglebuttonwrapper">' +
+                                                            '<div id="rstbmenudisplayabilitytogglebuttonnob">' +
+                                                            '</div>' +
+                                                        '</div>' +
+                                                    '</div>';
 
         menuDivCSS = {
             'height': MENU_HEIGHT + MH_UN,
@@ -201,7 +206,7 @@ function pollForRES () {
         };
 
         for (var prop in menuDivCSS) rstbMenuDiv.style[prop] = menuDivCSS[prop];
-        rstbMenuDiv.innerHTML = menuSVG + rstbMenuSpacerHTML + rstbMenuDisplayabilityToggleOptionHTML;
+        rstbMenuDiv.innerHTML = rstbMenuSpacerHTML + menuSVG + rstbMenuDisplayabilityToggleOptionHTML;
 
         rstbMenuSVG = document.getElementById ('rstbmenudiv');
         rstbMenuSVGPolygon = document.getElementById ('rstbmenusvgpolygon');

@@ -4,9 +4,47 @@
 	position: fixed;
 }
 
+.rstbmenuoption {
+	background-color: #369;
+	border-radius: 5px;
+	color: white;
+	cursor: default;
+	height: 2em;
+	line-height: 2em;
+	margin: 7px;
+	padding-left: 6px;
+}
+
+#rstbmenuspacer {
+}
+
 #rstbmenusvg {
-	position: fixed;
-	z-index: 101;
+	position: absolute;
+	top: 0;
+	z-index: -1;
+}
+
+#rstbmenudisplayabilitytogglebuttonnob {
+	background-color: rgb(125,95,95);
+	border-radius: 6px;
+	height: 1em;
+	left: 2px;
+	position: relative;
+	top: 1.25px;
+	width: 1em;
+}
+
+#rstbmenudisplayabilitytogglebuttonwrapper {
+	background-color: rgb(187,157,157);
+	border: 1px solid rgb(40,40,40);
+	border-radius: 7px;
+	cursor: pointer;
+	display: inline-block;
+	height: 1.25em;
+	left: 5px;
+	position: relative;
+	top: 2.5px;
+	width: 30px;
 }
 
 #rstbmenudisplayabilitytoggleoption {
