@@ -217,7 +217,6 @@ function pollForRES () {
         for (var prop in menuDivCSS) rstbMenuDiv.style[prop] = menuDivCSS[prop];
         rstbMenuDiv.innerHTML = rstbMenuSpacerHTML + menuSVG + rstbMenuDisplayabilityToggleOptionHTML;
 
-        rstbMenuSVG = document.getElementById ('rstbmenudiv');
         rstbMenuSVGPolygon = document.getElementById ('rstbmenusvgpolygon');
         rstbMenuSpacer = document.getElementById ('rstbmenuspacer');
         rstbMenuDisplayabilityToggleOption = document.getElementById ('rstbmenudisplayabilitytoggleoption');
@@ -225,7 +224,7 @@ function pollForRES () {
         rstbMenuDisplayabilityToggleButtonWrapper = document.getElementById ('rstbmenudisplayabilitytogglebuttonwrapper');
         rstbMenuDisplayabilityToggleButtonNob = document.getElementById ('rstbmenudisplayabilitytogglebuttonnob');
 
-        for (var prop in menuSVGCSS.svg) rstbMenuSVG.style[prop] = menuSVGCSS.svg[prop];
+        for (var prop in menuSVGCSS.svg) rstbMenuDiv.style[prop] = menuSVGCSS.svg[prop];
         for (var prop in menuSVGCSS.polygon) rstbMenuSVGPolygon.style[prop] = menuSVGCSS.polygon[prop];
 
         for (var prop in menuSpacerCSS) rstbMenuSpacer.style[prop] = menuSpacerCSS[prop];
