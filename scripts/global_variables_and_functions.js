@@ -2,41 +2,46 @@ var rstbBooleanTree = {
 
     hideSidebar: {
         parents: [],
-        children: []
+        children: [],
+        value: false
     },
 
     mouseOnButton: {
         parents: [],
-        children: []
+        children: [],
+        value: false
     },
 
     hoverAnimationNotInitialized: {
         parents: [],
-        children: []
+        children: [],
+        value: true
     },
 
     resIsInstalled: {
         parents: [],
-        children: []
+        children: [],
+        value: false
     },
 
     isNightMode: {
         parents: [],
-        children: []
+        children: [],
+        value: false
     },
 
     buttonDisplayerFlagEnabled: {
         parents: [],
-        children: ['buttonDisplayed']
+        children: ['buttonDisplayed'],
+        value: false
     },
 
     buttonDisplayed: {
         parents: ['buttonDisplayerFlagEnabled'],
-        children: []
+        children: [],
+        value: false
     }
-};
-
-
+}, bT = new BooleanTree (rstbBooleanTree),
 
 
 
@@ -103,8 +108,6 @@ var BG_RGB             = [255, 255, 255],
     interpolTrans   = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
     isAct           = false,
 
-    // Boolean tree object
-    bT = new BoolTree (rstbBooleanTree),
 
     // Initial CSS values for the button
     buttonCSS = {
@@ -122,6 +125,39 @@ var BG_RGB             = [255, 255, 255],
         'right':               BUTTON_MARGIN + BM_UN,
         '-webkit-user-select': USER_SELECT,
         'z-index':             Number.MAX_SAFE_INTEGER || 509031400070006
+    },
+
+    // Initial CSS values for the menu's contents
+    menuDivCSS = {
+        'height': MENU_HEIGHT + MH_UN,
+        'left': 0,
+        'top': 0,
+        'width': MENU_WIDTH + MW_UN,
+        'z-index': 100
+    },
+
+    menuSVGCSS = {
+        'svg': {
+            'left': 0,
+            'margin': 0,
+            'padding': 0,
+            'position': 'fixed',
+            'top': 0
+        },
+
+        'polygon': {
+            // 'cursor': 'pointer',
+            'stroke': 'rgba(' + MENU_STROKE_DAY + ',' + IDLE_ALPHA + ')',
+            'stroke-width': MENU_STROKE_WIDTH + MSW_UN
+        }
+    },
+
+    menuSpacerCSS = {
+        'height': MENU_ARROW_HEIGHT + MH_UN,
+        'margin': 0,
+        'padding': 0,
+        'top': 0,
+        'width': '100%'
     },
 
     // Animation objects to be fed to the animators
@@ -187,7 +223,28 @@ var BG_RGB             = [255, 255, 255],
                     (MHW + MENU_ARROW_HALF_LEN) + ',' + MENU_ARROW_HEIGHT + ' ' +
                     MENU_WIDTH + ',' + MENU_ARROW_HEIGHT + ' ' +
                     MENU_WIDTH + ',' + MENU_HEIGHT + ' ' +
-                    '0,' + MENU_HEIGHT;
+                    '0,' + MENU_HEIGHT,
+
+    // HTML for the RSTB Menu
+    xml       = ' xmlns="http://www.w3.org/2000/svg"',
+    svgCode   = '<div id="rstbmenusvgwrapper"><svg width="'+ MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '"' + xml +
+                  'stroke-linejoin="miter" id="rstbmenusvg">' +
+                    '<g>' +
+                        '<polygon points="' + menuSVGPoints + '" fill="rgba(0,0,0,0)" id="rstbmenusvgpolygon"/>' +
+                    '</g>' +
+                '</svg></div>',
+
+    rstbMenuSpacerHTML = '<div id="rstbmenuspacer"></div>',
+    rstbMenuDisplayabilityToggleOptionHTML  =   '<div id="rstbmenudisplayabilitytoggleoption" class="rstbmenuoption">' +
+                                                    MENU_TD_TEXT + '<div id="rstbmenudisplayabilitytogglebuttonwrapper">' +
+                                                        '<div id="rstbmenudisplayabilitytogglebuttonnob">' +
+                                                        '</div>' +
+                                                    '</div>' +
+                                                '</div>';
+
+    LEFT_CLICK   = 1,
+    MIDDLE_CLICK = 2,
+    RIGHT_CLICK  = 3;
 
 
 
@@ -197,6 +254,8 @@ var rstbElements = [
         'redditSideToggleButton',
         'rstbMenuLink',
         'rstbMenuDiv',
+        'rstbMenuSVGWrapper',
+        'rstbMenuSVG',
         'rstbMenuSVGPolygon',
         'rstbMenuSpacer',
         'rstbMenuDisplayabilityToggleOption',
@@ -205,7 +264,7 @@ var rstbElements = [
         'rstbMenuDisplayabilityToggleButtonNob'
     ],
 
-    // Reddit-specific DOM elements
+// Reddit-specific DOM elements
     redditSCA = document.getElementsByClassName ('side'),
     redditHeader = document.getElementById ('header'),
     redditListingChooser = document.getElementsByClassName ('listing-chooser')[0],
@@ -213,14 +272,30 @@ var rstbElements = [
     resNightSwitchToggle = document.getElementById ('nightSwitchToggle'),
     body = document.body;
 
+// Store the side class arra display style for all side class elements and push the button's display
+var sCDS = [];
+for (var i = 0; i < redditSCA.length; i++) sCDS.push (redditSCA[i].style.display);
+sCDS.push (el.redditSideToggleButton.style.display);
+
+var el = getDomElementReferencesFor (rstbElements);
 function getDomElementReferencesFor (elementNames) {
     var elements = {};
     for (var i = 0; i < elementNames.length; i++) {
         var element = elementNames[i];
         elements[element] = document.getElementById (element.toLowerCase ());
+
+        // Remove any elements that do not exist
+        if (!elements[element]) delete elements[element];
     }
 
     return elements;
+}
+
+function styleSpecifiedReferences () {
+    for (var prop in menuDivCSS) el.rstbMenuDiv.style[prop] = menuDivCSS[prop];
+    for (var prop in menuSVGCSS.svg) el.rstbMenuSVG.style[prop] = menuSVGCSS.svg[prop];
+    for (var prop in menuSVGCSS.polygon) el.rstbMenuSVGPolygon.style[prop] = menuSVGCSS.polygon[prop];
+    for (var prop in menuSpacerCSS) el.rstbMenuSpacer.style[prop] = menuSpacerCSS[prop];
 }
 
 
@@ -437,4 +512,69 @@ function logRSTBLogo () {
       console.log('%c        ' +
                   '%c                                                ' +
                   '%c        ', '', UP, '');
+}
+
+
+
+
+
+// Chrome setting storage functions
+function reloadFromLocalStorage (callback) {
+    chrome.storage.local.get ('isHidden', function (settings) {
+        if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+        else !!settings.isHidden? bT.makeTrue ('hideSidebar') : bT.makeFalse ('hideSidebar');
+
+        callback ();
+    });
+
+    chrome.storage.local.get ('buttonDisplayerFlagEnabled', function (settings) {
+
+    });
+}
+
+
+
+
+
+
+// Polls for RES. Gives up after a predetermined time
+var MAX_TIME_DELAY_MS = 250,
+    timeAtPoll = Date.now (),
+    NIGHT_MODE_URL_RGX = /^https?:\/\/nm\./i;
+
+function pollForRES () {
+    if (Date.now () - timeAtPoll <= MAX_TIME_DELAY_MS) {
+        resNightSwitchToggle = document.getElementById ('nightSwitchToggle');
+        if (resNightSwitchToggle) {
+            bT.makeTrue ('resIsInstalled');
+            resNightSwitchToggle.className.match (/enabled$/i)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+        }
+
+        else requestAnimationFrame (pollForRES);
+    }
+
+    else {
+        document.URL.match (NIGHT_MODE_URL_RGX)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+    }
+}
+
+
+
+
+
+// Toggles the sidebar visibility given the RSTB DOM reference
+function toggleSidebar () {
+    if (bT.holdsTrue ('hideSidebar')) {
+        el.redditSideToggleButton.innerHTML = 'Show';
+        for (var i = 0; i < redditSCA.length; i++) redditSCA[i].style.display = 'none';
+    }
+
+    else {
+        el.redditSideToggleButton.innerHTML = 'Hide';
+        for (var i = 0; i < redditSCA.length; i++) redditSCA[i].style.display = sCDS[i];
+    }
+
+    chrome.storage.local.set ({isHidden: bT.isTrue ('hideSidebar')}, function () {
+        if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+    });
 }
