@@ -39,7 +39,7 @@ sCDS.push (rSTB.style.display);
 
 // Set the el object DOM references
 el = getDomElementReferencesFor (rstbElements);
-
+styleSpecifiedReferences ();
 
 
 // Add the animations to the animators

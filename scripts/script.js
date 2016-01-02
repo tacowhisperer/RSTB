@@ -133,12 +133,12 @@
 // rstbMenuDiv.setAttribute ('style', 'display:none;');
 // document.body.appendChild (rstbMenuDiv);
 
-// Create the RSTB menu reference and add the menu to it
-var rstbMenuLink = document.getElementById ('rstbmenulink');
-rstbMenuDiv = document.getElementById ('rstbmenudiv');
+// // Create the RSTB menu reference and add the menu to it
+// var rstbMenuLink = document.getElementById ('rstbmenulink');
+// rstbMenuDiv = document.getElementById ('rstbmenudiv');
 
 // Polls for RES. Gives up after 200ms
-var timeAtPoll = Date.now (), resIsInstalled = false;
+// var timeAtPoll = Date.now (), resIsInstalled = false;
 function pollForRES () {
 
     // // Handles the case where the function should continue polling
@@ -392,45 +392,45 @@ function pollForRES () {
 
 
 // Hover, click, and menu option variables
-var hide = false,
-    onButton = false,
-    notHoveredYet = true,
-    notEnabledYet = true,
-    buttonEnablerEnabled = false,
-    buttonEnabled = false;
-
-// Handles making the button visible or invisible based on the sidebar to HTML body width ratio
-var body = document.getElementsByTagName ('body')[0];
-window.addEventListener ('resize', toggleDisplayability);
-
-function toggleDisplayability () {
-    if (buttonEnablerEnabled) {
-        var broke = false;
-
-        // Checks each side class element to make sure that it is taking enough screen space before enabling the button
-        for (var i = 0; i < rSCA.length; i++) {
-            var check1 = rSCA[i].style.display == 'none',
-                check2 = rSCA[i].getBoundingClientRect ().left / body.getBoundingClientRect ().right >= 1 - SIDE_TO_BODY_RATIO,
-                check3 = (rSCA[i].offsetWidth / body.offsetWidth) >= SIDE_TO_BODY_RATIO;
-
-            if (check1 || check3) {
-                buttonEnabled = true;
-                button.style.display = sCDS[sCDS.length - 1];
-                broke = true;
-                break;
-            }
-        }
-
-        if (!broke) {
-            buttonEnabled = false;
-            button.style.display = 'none';
-            hoverAnimator.pause ();
-        }
-    } else {
-        // Make sure that the button is always visible otherwise
-        buttonEnabled = true;
-    }
-}
+// var hide = false,
+//     onButton = false,
+//     notHoveredYet = true,
+//     notEnabledYet = true,
+//     buttonEnablerEnabled = false,
+//     buttonEnabled = false;
+//
+// // Handles making the button visible or invisible based on the sidebar to HTML body width ratio
+// var body = document.getElementsByTagName ('body')[0];
+// window.addEventListener ('resize', toggleDisplayability);
+//
+// function toggleDisplayability () {
+//     if (buttonEnablerEnabled) {
+//         var broke = false;
+//
+//         // Checks each side class element to make sure that it is taking enough screen space before enabling the button
+//         for (var i = 0; i < rSCA.length; i++) {
+//             var check1 = rSCA[i].style.display == 'none',
+//                 check2 = rSCA[i].getBoundingClientRect ().left / body.getBoundingClientRect ().right >= 1 - SIDE_TO_BODY_RATIO,
+//                 check3 = (rSCA[i].offsetWidth / body.offsetWidth) >= SIDE_TO_BODY_RATIO;
+//
+//             if (check1 || check3) {
+//                 buttonEnabled = true;
+//                 button.style.display = sCDS[sCDS.length - 1];
+//                 broke = true;
+//                 break;
+//             }
+//         }
+//
+//         if (!broke) {
+//             buttonEnabled = false;
+//             button.style.display = 'none';
+//             hoverAnimator.pause ();
+//         }
+//     } else {
+//         // Make sure that the button is always visible otherwise
+//         buttonEnabled = true;
+//     }
+// }
 
 
 // Handles mouseenter animation
@@ -469,7 +469,7 @@ button.addEventListener ("mousedown", function () {
 
 // Handles mouseup animation, toggle functionality, and setting storage on the local machine. Cancels firing the menu if
 // mouseup before critical time.
-var LEFT_CLICK = 1, MIDDLE_CLICK = 2, RIGHT_CLICK = 3;
+// var LEFT_CLICK = 1, MIDDLE_CLICK = 2, RIGHT_CLICK = 3;
 button.addEventListener ("mouseup", function (e) {
     if (onButton) {
         if (e.which == LEFT_CLICK) {
@@ -511,23 +511,23 @@ button.addEventListener ("mouseup", function (e) {
 
 
 
-// Handles toggle functionality and setting storage on the local machine
-function togglerHelper () {if (buttonEnabled) {
-    if (hide) {
-        button.innerHTML = 'Show';
-        for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = 'none';
-    }
-
-    else {
-        button.innerHTML = 'Hide';
-        for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = sCDS[i];
-    }
-
-    // Option storage handling code
-    chrome.storage.local.set ({isHidden: hide}, function () {
-        if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
-    });
-}}
+// // Handles toggle functionality and setting storage on the local machine
+// function togglerHelper () {if (buttonEnabled) {
+//     if (hide) {
+//         button.innerHTML = 'Show';
+//         for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = 'none';
+//     }
+//
+//     else {
+//         button.innerHTML = 'Hide';
+//         for (var i = 0; i < rSCA.length; i++) rSCA[i].style.display = sCDS[i];
+//     }
+//
+//     // Option storage handling code
+//     chrome.storage.local.set ({isHidden: hide}, function () {
+//         if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+//     });
+// }}
 
 
 
