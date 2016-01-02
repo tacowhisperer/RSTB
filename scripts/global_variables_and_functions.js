@@ -18,6 +18,12 @@ var rstbBooleanTree = {
         value: true
     },
 
+    displayOptionAnimationNotInitialized: {
+        parents: [],
+        children: [],
+        value: true
+    },
+
     resIsInstalled: {
         parents: [],
         children: [],
@@ -30,17 +36,18 @@ var rstbBooleanTree = {
         value: false
     },
 
-    buttonDisplayerFlagEnabled: {
+    buttonAlwaysDisplayed: {
         parents: [],
-        children: ['buttonDisplayed'],
+        children: [],
         value: false
     },
 
-    buttonDisplayed: {
-        parents: ['buttonDisplayerFlagEnabled'],
+    buttonIsDisplayedNow: {
+        parents: [],
         children: [],
         value: false
     }
+
 }, bT = new BooleanTree (rstbBooleanTree),
 
 
@@ -214,7 +221,7 @@ var BG_RGB             = [255, 255, 255],
         updater:           rstbDisplayabilityNobPosUpdate,
         interpolTransform: interpolTrans,
         isActive:          isAct
-    },    
+    },
 
     // Points that define the outline of the SVG for the RSTB Menu
     menuSVGPoints = '0,' + MENU_ARROW_HEIGHT + ' ' +
@@ -265,12 +272,12 @@ var rstbElements = [
     ],
 
 // Reddit-specific DOM elements
-    redditSCA = document.getElementsByClassName ('side'),
-    redditHeader = document.getElementById ('header'),
-    redditListingChooser = document.getElementsByClassName ('listing-chooser')[0],
-    redditTabMenu = document.getElementsByClassName ('tabmenu')[0],
-    resNightSwitchToggle = document.getElementById ('nightSwitchToggle'),
-    body = document.body;
+redditSCA = document.getElementsByClassName ('side'),
+redditHeader = document.getElementById ('header'),
+redditListingChooser = document.getElementsByClassName ('listing-chooser')[0],
+redditTabMenu = document.getElementsByClassName ('tabmenu')[0],
+resNightSwitchToggle = document.getElementById ('nightSwitchToggle'),
+body = document.body;
 
 // Store the side class arra display style for all side class elements and push the button's display
 var sCDS = [];
@@ -321,10 +328,10 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
 
         GREEN  = I++,
         A_STAR = GREEN,
-        
+
         BLUE   = I++,
         B_STAR = BLUE,
-        
+
         ALPHA = I++;
 
     q = q < 0? 0 : q > 1? 1 : q;
@@ -340,7 +347,7 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         alphaValue = q * sRGBA[ALPHA] + p * eRGBA[ALPHA],
 
         iRGBA = x2R (l2X ([iL, ia, ib, alphaValue]));
-    
+
     // Returns the array corresponding to the XYZ values of the input RGB array
     function r2X (rgb) {
         var R = rgb[0] / 255,
@@ -519,16 +526,20 @@ function logRSTBLogo () {
 
 
 // Chrome setting storage functions
-function reloadFromLocalStorage (callback) {
+function reloadSettingsFromLocalStorage (callback1, callback2) {
     chrome.storage.local.get ('isHidden', function (settings) {
         if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
         else !!settings.isHidden? bT.makeTrue ('hideSidebar') : bT.makeFalse ('hideSidebar');
 
-        callback ();
+        callback1 ();
     });
 
-    chrome.storage.local.get ('buttonDisplayerFlagEnabled', function (settings) {
+    var bD = 'buttonAlwaysDisplayed';
+    chrome.storage.local.get (bD, function (settings) {
+        if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+        else !!settings[bD]? bT.makeTrue (bD) : bT.makeFalse (bD);
 
+        callback2 ();
     });
 }
 
@@ -577,4 +588,97 @@ function toggleSidebar () {
     chrome.storage.local.set ({isHidden: bT.isTrue ('hideSidebar')}, function () {
         if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
     });
+}
+
+// Toggles the button visibility
+function toggleButtonVisibility () {
+    if (bT.holdsTrue ('buttonAlwaysDisplayed')) {
+        el.redditSideToggleButton.style.display = sCDS[sCDS.length - 1];
+    }
+
+    else {
+        el.redditSideToggleButton.style.display = 'none';
+    }
+
+    chrome.storage.local.set ({buttonAlwaysDisplayed: bT.isTrue ('buttonAlwaysDisplayed')}, function () {
+        if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+    });
+}
+
+
+
+
+
+// Displays the RSTB menu from the Reddit Tab menu
+function displayRSTBMenu (left, top) {
+    if (bT.holdsTrue ('resIsInstalled')) {
+        resNightSwitchToggle.className.match (/enabled$/i)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+    }
+
+    else {
+        document.URL.match (NIGHT_MODE_URL_RGX)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+    }
+
+    var rgbaBG = 'rgba(' + (bT.holdsTrue ('isNightMode')? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + ACTIVE_ALPHA + ')',
+        rgbaSt = 'rgba(' + (bT.holdsTrue ('isNightMode')? MENU_STROKE_NIGHT : MENU_STROKE_DAY) + ',' + ACTIVE_ALPHA + ')',
+        topValue = Math.max (redditHeader.offsetHeight, redditTabMenu.getBoundingClientRect ().bottom) - window.scrollY;
+
+    el.rstbMenuDiv.style.top  = topValue + MH_UN;
+    el.rstbMenuDiv.style.left = (left - MHW) + MW_UN;
+    el.rstbMenuDiv.style.position = 'fixed';
+    el.rstbMenuDiv.style.display = 'block';
+
+    el.rstbMenuSVGPolygon.setAttribute ('fill', rgbaBG);
+    el.rstbMenuSVGPolygon.style.stroke = rgbaSt;
+}
+
+// Hides the RSTB menu from the viewport
+function hideRSTBMenu () {
+    if (bT.holdsTrue ('resIsInstalled')) {
+        resNightSwitchToggle.className.match (/enabled$/i)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+    }
+
+    else {
+        document.URL.match (NIGHT_MODE_URL_RGX)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+    }
+
+    var rgbaBG = 'rgba(' + (bT.holdsTrue ('isNightMode')? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + IDLE_ALPHA + ')',
+        rgbaSt = 'rgba(' + (bT.holdsTrue ('isNightMode')? MENU_STROKE_NIGHT : MENU_STROKE_DAY) + ',' + IDLE_ALPHA + ')';
+    el.rstbMenuDiv.style.display = 'none';
+
+    el.rstbMenuSVGPolygon.setAttribute ('fill', rgbaBG);
+    el.rstbMenuSVGPolygon.style.stroke = rgbaSt;
+}
+
+
+
+
+
+// Updater for the button text color animation
+function txtRGBAUpdate (rgba) {
+    el.redditSideToggleButton.style.color = rgba;
+    el.redditSideToggleButton.style.border = borderAnim + rgba;
+}
+
+// Updater for the button background color animation
+function bgRGBAUpdate (rgba) {
+    el.redditSideToggleButton.style.backgroundColor = rgba;
+}
+
+// Updater for the option background color animation
+function rstbDisplayabilityBGUpdate (rgba) {
+    // Placed inside of undefined check because of polling
+    if (el.rstbMenuDisplayabilityToggleButtonWrapper) el.rstbMenuDisplayabilityToggleButtonWrapper.style.backgroundColor = rgba;
+}
+
+// Updater for the option nob background color animation
+function rstbDisplayabilityNobBGUpdate (rgba) {
+    // Placed inside of undefined check because of polling
+    if (el.rstbMenuDisplayabilityToggleButtonNob) el.rstbMenuDisplayabilityToggleButtonNob.style.backgroundColor = rgba;
+}
+
+// Updater for the option button nob position animation
+function rstbDisplayabilityNobPosUpdate (pos) {
+    // Placed inside of undefined check because of polling
+    if (el.rstbMenuDisplayabilityToggleButtonNob) el.rstbMenuDisplayabilityToggleButtonNob.style.left = pos;
 }
