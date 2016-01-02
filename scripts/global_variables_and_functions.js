@@ -282,9 +282,8 @@ body = document.body;
 // Store the side class arra display style for all side class elements and push the button's display
 var sCDS = [];
 for (var i = 0; i < redditSCA.length; i++) sCDS.push (redditSCA[i].style.display);
-sCDS.push (el.redditSideToggleButton.style.display);
 
-var el = getDomElementReferencesFor (rstbElements);
+var el;
 function getDomElementReferencesFor (elementNames) {
     var elements = {};
     for (var i = 0; i < elementNames.length; i++) {
