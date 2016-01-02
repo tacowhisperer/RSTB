@@ -1,6 +1,6 @@
 /**
  * Creates the side toggling button on the lower right corner of the window on Reddit
- * and enables the functions that show or hide the sidebar on click. 
+ * and enables the functions that show or hide the sidebar on click.
  *
  * Most of the code in this file is for animating the transparency and color on hover
  * and click for aesthetic purposes. Full functionality can be achieved through jQuery,
@@ -40,5 +40,46 @@ displayAnimator.addAnimation (rstbMenuBGAnimation)
 			   .addAnimation (rstbMenuNobBGAnimation)
 			   .addAnimation (rstbMenuNobPosAnimation)
 			   .start ();
+
+
+
+
+// Set up the mouse handlers for the button and the displayability menu
+
+// Shows or hides the button based on the settings provided by the user
+window.addEventListener ('resize', executeButtonDisplayability);
+function executeButtonDisplayability () {
+    // Ensures that the button is visible if the side classes are not
+    var requiresButtonFunctionality = false;
+    for (var i = 0; i < redditSCA.length; i++) {
+        var invisibleByDisplay = redditSCA.style.display == 'none',
+            isAnnoyinglyBig = (redditSCA[i].offsetWidth / body.offsetWidth) >= SIDE_TO_BODY_RATIO;
+
+        if (invisibleByDisplay || isAnnoyinglyBig) {
+            requiresButtonFunctionality = true;
+            break;
+        }
+    }
+
+    if (requiresButtonFunctionality || bT.holdsTrue ('buttonAlwaysDisplayed')) {
+        el.redditSideToggleButton.style.display = sCDS[sCDS.length - 1];
+        bT.makeTrue ('buttonIsDisplayedNow');
+    }
+
+    else {
+        el.redditSideToggleButton.style.display = 'none';
+        hoverAnimator.pause ();
+        bT.makeFalse ('buttonIsDisplayedNow');
+    }
+}
+
+
+
+
+// Poll for RES to correctly set the resIsInstalled and the isNightMode bT booleans
+pollForRES ();
+
+// Finish initialization by reloading the settings from the previous page reload, if any
+reloadSettingsFromLocalStorage (toggleSidebar, toggleButtonVisibility);
 
 }
