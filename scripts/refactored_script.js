@@ -17,17 +17,28 @@ if (redditSCA.length) {
 var rstbTab = document.createElement ('li'),
 	rstbMenuDiv = document.createElement ('div');
 
+// Create the tab that goes in the Reddit Tab Menu
 rstbTab.innerHTML = '<a href="javascript:void(0)" id="rstbmenulink" class="choice">' + MENU_TAB_TEXT + '</a>';
-tabMenu.appendChild (rstbTab);
+redditTabMenu.appendChild (rstbTab);
 
+// Create the RSTB Menu that will appear when the tab is clicked
 rstbMenuDiv.setAttribute ('id', 'rstbmenudiv');
 rstbMenuDiv.setAttribute ('style', 'display:none;');
 body.appendChild (rstbMenuDiv);
+rstbMenuDiv.innerHTML = rstbMenuSpacerHTML + svgCode + rstbMenuDisplayabilityToggleOptionHTML;
 
+// Create the RSTB
 var rSTB = document.createElement ('p');
 rSTB.id = 'redditSideToggleButton';
 rSTB.innerHTML = 'Hide';
 for (var prop in buttonCSS) rSTB.style[prop] = buttonCSS[prop];
+
+// Add the RSTB to the DOM and save its display CSS property
+body.appendChild (rSTB);
+sCDS.push (rSTB.style.display);
+
+// Set the el object DOM references
+el = getDomElementReferencesFor (rstbElements);
 
 
 
@@ -43,10 +54,13 @@ displayAnimator.addAnimation (rstbMenuBGAnimation)
 
 
 
-
 // Set up the mouse handlers for the button and the displayability menu
 
 // Shows or hides the button based on the settings provided by the user
+window.addEventListener ('scroll', hideRSTBMenu);
+window.addEventListener ('resize', hideRSTBMenu);
+if (redditListingChooser) redditListingChooser.addEventListener ('mousedown', hideRSTBMenu);
+
 window.addEventListener ('resize', executeButtonDisplayability);
 function executeButtonDisplayability () {
     // Ensures that the button is visible if the side classes are not
