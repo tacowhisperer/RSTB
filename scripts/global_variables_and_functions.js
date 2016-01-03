@@ -48,7 +48,7 @@ var rstbBooleanTree = {
         value: false
     }
 
-}, bT = new BooleanTree (rstbBooleanTree),
+}, bT = new BooleanTree (rstbBooleanTree);
 
 
 

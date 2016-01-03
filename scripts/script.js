@@ -230,20 +230,20 @@ function pollForRES () {
         // for (var prop in menuSpacerCSS) rstbMenuSpacer.style[prop] = menuSpacerCSS[prop];
 
         // Set up click functionality for the RSTB Tab Menu
-        rstbMenuLink.addEventListener ('mousedown', function (e) {
-            if (e.target == rstbMenuLink) {
-                displayMenu (e.clientX, e.clientY);
-            }
-        });
+        // rstbMenuLink.addEventListener ('mousedown', function (e) {
+        //     if (e.target == rstbMenuLink) {
+        //         displayMenu (e.clientX, e.clientY);
+        //     }
+        // });
 
         // Set up menu displayability option functionality in the RSTB Menu
         rstbMenuDisplayabilityToggleButtonWrapper.addEventListener ('mousedown', function () {
-            if (notEnabledYet) {
-                displayAnimator .playAnimation (rstbMenuBGAnimation)
-                                .playAnimation (rstbMenuNobBGAnimation)
-                                .playAnimation (rstbMenuNobPosAnimation);
-                notEnabledYet = false;
-            }
+            // if (notEnabledYet) {
+            //     displayAnimator .playAnimation (rstbMenuBGAnimation)
+            //                     .playAnimation (rstbMenuNobBGAnimation)
+            //                     .playAnimation (rstbMenuNobPosAnimation);
+            //     notEnabledYet = false;
+            // }
 
             rstbMenuDisplayabilityAnimatingForward = !rstbMenuDisplayabilityAnimatingForward;
             if (rstbMenuDisplayabilityAnimatingForward) {
@@ -434,61 +434,61 @@ function pollForRES () {
 
 
 // Handles mouseenter animation
-button.addEventListener ("mouseenter", function () {
-    onButton = true;
-
-    // Used for starting the hover animation for the first time
-    if (notHoveredYet) {
-        hoverAnimator.playAnimation (TXT_ANIMATION)
-                .playAnimation (BG_ANIMATION);
-        notHoveredYet = false;
-    }
-
-    hoverAnimator.setAnimationForward (TXT_ANIMATION)
-            .setAnimationForward (BG_ANIMATION)
-            .play ([TXT_ANIMATION, BG_ANIMATION]);
-});
+// button.addEventListener ("mouseenter", function () {
+//     onButton = true;
+//
+//     // Used for starting the hover animation for the first time
+//     if (notHoveredYet) {
+//         hoverAnimator.playAnimation (TXT_ANIMATION)
+//                 .playAnimation (BG_ANIMATION);
+//         notHoveredYet = false;
+//     }
+//
+//     hoverAnimator.setAnimationForward (TXT_ANIMATION)
+//             .setAnimationForward (BG_ANIMATION)
+//             .play ([TXT_ANIMATION, BG_ANIMATION]);
+// });
 
 // Handles mouseleave animation
-button.addEventListener ("mouseleave", function () {
-    onButton = false;
-    hoverAnimator.setAnimationBackward (TXT_ANIMATION)
-            .setAnimationBackward (BG_ANIMATION)
-            .play ([TXT_ANIMATION, BG_ANIMATION]);
-});
+// button.addEventListener ("mouseleave", function () {
+//     onButton = false;
+//     hoverAnimator.setAnimationBackward (TXT_ANIMATION)
+//             .setAnimationBackward (BG_ANIMATION)
+//             .play ([TXT_ANIMATION, BG_ANIMATION]);
+// });
 
 // Handles mousedown animation
-button.addEventListener ("mousedown", function () {
-    hoverAnimator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
-    button.style.color = bgRGBA1;
-    button.style.border = bgBorder1;
-    button.style.backgroundColor = txtRGBA1;
-
-});
+// button.addEventListener ("mousedown", function () {
+//     hoverAnimator.pause ().endAnimation (TXT_ANIMATION).endAnimation (BG_ANIMATION);
+//     button.style.color = bgRGBA1;
+//     button.style.border = bgBorder1;
+//     button.style.backgroundColor = txtRGBA1;
+//
+// });
 
 
 // Handles mouseup animation, toggle functionality, and setting storage on the local machine. Cancels firing the menu if
 // mouseup before critical time.
 // var LEFT_CLICK = 1, MIDDLE_CLICK = 2, RIGHT_CLICK = 3;
-button.addEventListener ("mouseup", function (e) {
-    if (onButton) {
-        if (e.which == LEFT_CLICK) {
-            // Sidebar visibility flag
-            hide = !hide;
-
-            // Toggle functionality and setting storage
-            togglerHelper ();
-
-            // Animation handling code
-            button.style.color = txtRGBA1;
-            button.style.border = txtBorder1;
-            button.style.backgroundColor = bgRGBA1;
-
-            // Make the button disappear if not taking up too much screen space
-            toggleDisplayability ();
-        }
-    }
-});
+// button.addEventListener ("mouseup", function (e) {
+//     if (onButton) {
+//         if (e.which == LEFT_CLICK) {
+//             // Sidebar visibility flag
+//             hide = !hide;
+//
+//             // Toggle functionality and setting storage
+//             togglerHelper ();
+//
+//             // Animation handling code
+//             button.style.color = txtRGBA1;
+//             button.style.border = txtBorder1;
+//             button.style.backgroundColor = bgRGBA1;
+//
+//             // Make the button disappear if not taking up too much screen space
+//             toggleDisplayability ();
+//         }
+//     }
+// });
 
 
 
