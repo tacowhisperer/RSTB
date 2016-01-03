@@ -139,7 +139,7 @@
 
 // Polls for RES. Gives up after 200ms
 // var timeAtPoll = Date.now (), resIsInstalled = false;
-function pollForRES () {
+// function pollForRES () {
 
     // // Handles the case where the function should continue polling
     // if (Date.now () - timeAtPoll <= 200) {
@@ -160,7 +160,7 @@ function pollForRES () {
     //     setUpRSTBMenu ();
     // }
 
-    function setUpRSTBMenu () {
+    // function setUpRSTBMenu () {
         // var xml = ' xmlns="http://www.w3.org/2000/svg"',
         // menuSVG   = '<div id="rstbmenusvg"><svg width="' + MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '"' + xml +
         //               'stroke-linejoin="miter">' +
@@ -237,7 +237,7 @@ function pollForRES () {
         // });
 
         // Set up menu displayability option functionality in the RSTB Menu
-        rstbMenuDisplayabilityToggleButtonWrapper.addEventListener ('mousedown', function () {
+        // rstbMenuDisplayabilityToggleButtonWrapper.addEventListener ('mousedown', function () {
             // if (notEnabledYet) {
             //     displayAnimator .playAnimation (rstbMenuBGAnimation)
             //                     .playAnimation (rstbMenuNobBGAnimation)
@@ -245,35 +245,35 @@ function pollForRES () {
             //     notEnabledYet = false;
             // }
 
-            rstbMenuDisplayabilityAnimatingForward = !rstbMenuDisplayabilityAnimatingForward;
-            if (rstbMenuDisplayabilityAnimatingForward) {
-                displayAnimator .setAnimationForward (rstbMenuBGAnimation)
-                                .setAnimationForward (rstbMenuNobBGAnimation)
-                                .setAnimationForward (rstbMenuNobPosAnimation);
-            }
-
-            else {
-                displayAnimator .setAnimationBackward (rstbMenuBGAnimation)
-                                .setAnimationBackward (rstbMenuNobBGAnimation)
-                                .setAnimationBackward (rstbMenuNobPosAnimation);
-            }
-
-            // Stores the new setting so that it is remembered on the next page load
-            buttonEnablerEnabled = !buttonEnablerEnabled;
-            chrome.storage.local.set ({enablerEnabled:buttonEnablerEnabled}, function () {
-                if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
-            });
-
-            toggleDisplayability ();
-        });
+            // rstbMenuDisplayabilityAnimatingForward = !rstbMenuDisplayabilityAnimatingForward;
+        //     if (rstbMenuDisplayabilityAnimatingForward) {
+        //         displayAnimator .setAnimationForward (rstbMenuBGAnimation)
+        //                         .setAnimationForward (rstbMenuNobBGAnimation)
+        //                         .setAnimationForward (rstbMenuNobPosAnimation);
+        //     }
+        //
+        //     else {
+        //         displayAnimator .setAnimationBackward (rstbMenuBGAnimation)
+        //                         .setAnimationBackward (rstbMenuNobBGAnimation)
+        //                         .setAnimationBackward (rstbMenuNobPosAnimation);
+        //     }
+        //
+        //     // Stores the new setting so that it is remembered on the next page load
+        //     buttonEnablerEnabled = !buttonEnablerEnabled;
+        //     chrome.storage.local.set ({enablerEnabled:buttonEnablerEnabled}, function () {
+        //         if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+        //     });
+        //
+        //     toggleDisplayability ();
+        // });
 
         // Hide the RSTB Menu if the user scrolls, resizes the window, or clicks the main body
         // var listingChooser = document.getElementsByClassName ('listing-chooser')[0];
         // window.addEventListener ('scroll', hideMenu);
         // window.addEventListener ('resize', hideMenu);
         // if (listingChooser) listingChooser.addEventListener ('mousedown', hideMenu);
-    }
-}
+    // }
+// }
 
 
 // // Animates the menu into visibility

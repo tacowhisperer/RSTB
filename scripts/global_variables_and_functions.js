@@ -69,7 +69,7 @@ var BG_RGB             = [255, 255, 255],
 
     // Easy-to-manipulate RSTB menu variables and CSS values. Units are separate for potential math operations
     MENU_TAB_TEXT       = 'RSTB',
-    MENU_TD_TEXT        = 'Hide for Widescreen: ',
+    MENU_TD_TEXT        = 'Always Show Button: ',
     MENU_BG_DAY         = [243, 243, 243],
     MENU_STROKE_DAY     = [22, 22, 22],
     MENU_BG_NIGHT       = [22, 22, 22],
@@ -148,7 +148,7 @@ var BG_RGB             = [255, 255, 255],
             'left': 0,
             'margin': 0,
             'padding': 0,
-            'position': 'fixed',
+            // 'position': 'fixed',
             'top': 0
         },
 
@@ -192,8 +192,8 @@ var BG_RGB             = [255, 255, 255],
 
     rstbMenuBGAnimation = {
         animationName:     MENU_DISP_BG_ANIMATION,
-        startValue:        [187, 157, 157, ACTIVE_ALPHA],    // Ported straight from menu.css
-        endValue:          [157, 187, 157, ACTIVE_ALPHA],
+        startValue:        [207, 127, 157, ACTIVE_ALPHA],    // Ported straight from menu.css
+        endValue:          [127, 207, 157, ACTIVE_ALPHA],
         numFrames:         MENU_FRAME_DURATION,
         interpolator:      rgbaInterpolate,
         updater:           rstbDisplayabilityBGUpdate,
@@ -321,6 +321,7 @@ function styleSpecifiedReferences () {
  *     CSS-valid RGBA string with the interpolated value ready to go.
  */
 function rgbaInterpolate (sRGBA, eRGBA, q) {
+
     var I = 0,
         RED    = I++,
         L_STAR = RED,
@@ -340,10 +341,10 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
         sL = x2L (r2X (sRGBA)),
         eL = x2L (r2X (eRGBA)),
 
-        iL = q * sL[L_STAR] + p * eL[L_STAR],
-        ia = q * sL[A_STAR] + p * eL[A_STAR],
-        ib = q * sL[B_STAR] + p * eL[B_STAR],
-        alphaValue = q * sRGBA[ALPHA] + p * eRGBA[ALPHA],
+        iL = p * sL[L_STAR] + q * eL[L_STAR],
+        ia = p * sL[A_STAR] + q * eL[A_STAR],
+        ib = p * sL[B_STAR] + q * eL[B_STAR],
+        alphaValue = p * sRGBA[ALPHA] + q * eRGBA[ALPHA],
 
         iRGBA = x2R (l2X ([iL, ia, ib, alphaValue]));
 
@@ -421,7 +422,7 @@ function rgbaInterpolate (sRGBA, eRGBA, q) {
 function positionInterpolate (start, stop, q) {
     var p = 1 - q;
 
-    return q * start + p * stop;
+    return p * start + q * stop;
 }
 
 
@@ -530,7 +531,7 @@ function reloadSettingsFromLocalStorage (callback1, callback2) {
         if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
         else !!settings.isHidden? bT.makeTrue ('hideSidebar') : bT.makeFalse ('hideSidebar');
 
-        callback1 ();
+        callback1 ([true]);
     });
 
     var bD = 'buttonAlwaysDisplayed';
@@ -538,7 +539,7 @@ function reloadSettingsFromLocalStorage (callback1, callback2) {
         if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
         else !!settings[bD]? bT.makeTrue (bD) : bT.makeFalse (bD);
 
-        callback2 ();
+        callback2 ([true]);
     });
 }
 
@@ -589,14 +590,28 @@ function toggleSidebar () {
     });
 }
 
-// Toggles the button visibility
-function toggleButtonVisibility () {
-    if (bT.holdsTrue ('buttonAlwaysDisplayed')) {
+function executeButtonDisplayability () {
+    // Ensures that the button is visible if the side classes are not
+    var requiresButtonFunctionality = false;
+    for (var i = 0; i < redditSCA.length; i++) {
+        var invisibleByDisplay = redditSCA[i].style.display == 'none',
+            isAnnoyinglyBig = (redditSCA[i].offsetWidth / body.offsetWidth) >= SIDE_TO_BODY_RATIO;
+
+        if (invisibleByDisplay || isAnnoyinglyBig) {
+            requiresButtonFunctionality = true;
+            break;
+        }
+    }
+
+    if (requiresButtonFunctionality || bT.holdsTrue ('buttonAlwaysDisplayed')) {
         el.redditSideToggleButton.style.display = sCDS[sCDS.length - 1];
+        bT.makeTrue ('buttonIsDisplayedNow');
     }
 
     else {
         el.redditSideToggleButton.style.display = 'none';
+        hoverAnimator.pause ();
+        bT.makeFalse ('buttonIsDisplayedNow');
     }
 
     chrome.storage.local.set ({buttonAlwaysDisplayed: bT.isTrue ('buttonAlwaysDisplayed')}, function () {

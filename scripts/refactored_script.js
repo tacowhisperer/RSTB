@@ -57,7 +57,7 @@ hoverAnimator.addAnimation (txtAnimation)
 			 .start ();
 
 displayAnimator.addAnimation (rstbMenuBGAnimation)
-			   .addAnimation (rstbMenuNobBGAnimation)
+			   // .addAnimation (rstbMenuNobBGAnimation)
 			   .addAnimation (rstbMenuNobPosAnimation)
 			   .start ();
 
@@ -78,7 +78,7 @@ el.redditSideToggleButton.addEventListener ('mouseenter', function () {
 el.redditSideToggleButton.addEventListener ('mouseleave', function () {
     bT.makeFalse ('mouseOnButton');
 
-    hoverAnimator.setAnimationForward (TXT_ANIMATION).setAnimationForward (BG_ANIMATION).play ([TXT_ANIMATION, BG_ANIMATION]);
+    hoverAnimator.setAnimationBackward (TXT_ANIMATION).setAnimationBackward (BG_ANIMATION).play ([TXT_ANIMATION, BG_ANIMATION]);
 });
 
 el.redditSideToggleButton.addEventListener ('mousedown', function () {
@@ -110,16 +110,7 @@ el.rstbMenuLink.addEventListener ('mousedown', function (e) {
     }
 });
 
-el.rstbMenuDisplayabilityToggleButtonWrapper.addEventListener ('mousedown', function () {
-    if (bT.holdsTrue ('displayOptionAnimationNotInitialized')) {
-        displayAnimator .playAnimation (MENU_DISP_BG_ANIMATION)
-                        .playAnimation (MENU_NOB_BG_ANIMATION)
-                        .playAnimation (MENU_NOB_POSITION_ANIMATION);
-        bT.makeFalse ('displayOptionAnimationNotInitialized');
-    }
-
-
-});
+el.rstbMenuDisplayabilityToggleButtonWrapper.addEventListener ('mousedown', toggleButtonDisplayability);
 
 
 
@@ -129,38 +120,40 @@ window.addEventListener ('resize', hideRSTBMenu);
 if (redditListingChooser) redditListingChooser.addEventListener ('mousedown', hideRSTBMenu);
 
 window.addEventListener ('resize', executeButtonDisplayability);
-function executeButtonDisplayability () {
-    // Ensures that the button is visible if the side classes are not
-    var requiresButtonFunctionality = false;
-    for (var i = 0; i < redditSCA.length; i++) {
-        var invisibleByDisplay = redditSCA[i].style.display == 'none',
-            isAnnoyinglyBig = (redditSCA[i].offsetWidth / body.offsetWidth) >= SIDE_TO_BODY_RATIO;
 
-        if (invisibleByDisplay || isAnnoyinglyBig) {
-            requiresButtonFunctionality = true;
-            break;
-        }
+function toggleButtonDisplayability (calledFromInternal) {
+    if (bT.holdsTrue ('displayOptionAnimationNotInitialized')) {
+        displayAnimator .playAnimation (MENU_DISP_BG_ANIMATION)
+                        // .playAnimation (MENU_NOB_BG_ANIMATION)
+                        .playAnimation (MENU_NOB_POSITION_ANIMATION);
+        bT.makeFalse ('displayOptionAnimationNotInitialized');
     }
 
-    if (requiresButtonFunctionality || bT.holdsTrue ('buttonAlwaysDisplayed')) {
-        el.redditSideToggleButton.style.display = sCDS[sCDS.length - 1];
-        bT.makeTrue ('buttonIsDisplayedNow');
+    if (!calledFromInternal || !calledFromInternal[0]) bT.toggle ('buttonAlwaysDisplayed');
+    if (bT.holdsTrue ('buttonAlwaysDisplayed')) {
+        displayAnimator .setAnimationForward (MENU_DISP_BG_ANIMATION)
+                        // .setAnimationForward (MENU_NOB_BG_ANIMATION)
+                        .setAnimationForward (MENU_NOB_POSITION_ANIMATION);
     }
 
     else {
-        el.redditSideToggleButton.style.display = 'none';
-        hoverAnimator.pause ();
-        bT.makeFalse ('buttonIsDisplayedNow');
+        displayAnimator .setAnimationBackward (MENU_DISP_BG_ANIMATION)
+                        // .setAnimationBackward (MENU_NOB_BG_ANIMATION)
+                        .setAnimationBackward (MENU_NOB_POSITION_ANIMATION);
     }
-}
 
+    executeButtonDisplayability ();
+}
 
 
 
 // Poll for RES to correctly set the resIsInstalled and the isNightMode bT booleans
 pollForRES ();
 
+// Make sure that the button is visible if needed upon initialization if the user set it to hide
+setTimeout (executeButtonDisplayability, 0);
+
 // Finish initialization by reloading the settings from the previous page reload, if any
-reloadSettingsFromLocalStorage (toggleSidebar, toggleButtonVisibility);
+reloadSettingsFromLocalStorage (toggleSidebar, toggleButtonDisplayability);
 
 }

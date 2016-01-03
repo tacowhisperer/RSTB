@@ -25,7 +25,7 @@
  *                                                 transform).
  *
  *                             Argument Object Optional Key-Value Pairs:
- *                                 interpolTransform - Function that transforms the p argument of the interpolator to another 
+ *                                 interpolTransform - Function that transforms the p argument of the interpolator to another
  *                                                     value in [0, 1]. Example: function (v) {return 1 - Math.sqrt (1 - v * v);}
  *                                 updateArgs        - Array that will hold the arguments to be fed to the updater function.
  *                                                     Return value from the interpolator function is appended to the end of this
@@ -103,7 +103,7 @@ function Animator () {
     // Adds an animation plain object to the animator. Animations have no particular order.
     this.addAnimation = function (opts) {
         var iA = typeof opts.isActive == 'boolean'? opts.isActive : true,
-            aD = typeof opts.animateNegatively == 'boolean'? opts.animateNegatively : false,
+            aD = !!opts.animateNegatively,
             sV = opts.startValue,
             eV = opts.endValue,
             ip = opts.interpolator,
@@ -111,7 +111,7 @@ function Animator () {
             iT = opts.interpolTransform || function (v) {return v;},
             uA = opts.updateArgs,
             fG = new FrameGenerator (opts.numFrames);
-            
+
         // Create a new reference for the updater arguments and append a spot for the output of the interpolator function
         uA = uA? copyUpdateArgumentArray (uA) : [null];
 
@@ -164,7 +164,7 @@ function Animator () {
     this.playAnimation = function (animationName) {
         var a = animations[animationName];
         if (a && a[FRAME_GENERATOR].isPaused ()) a[FRAME_GENERATOR].unpause ();
-        
+
         return this;
     };
 
@@ -173,7 +173,7 @@ function Animator () {
     this.pauseAnimation = function (animationName) {
         var a = animations[animationName];
         if (a && !a[FRAME_GENERATOR].isPaused ()) a[FRAME_GENERATOR].pause ();
-        
+
         return this;
     };
 
@@ -181,7 +181,7 @@ function Animator () {
     // found in the animations object.
     this.setAnimationForward = function (animationName) {
         if (animations[animationName]) animations[animationName][ANIM_DIRECTION] = true;
-        
+
         return this;
     };
 
@@ -189,7 +189,7 @@ function Animator () {
     // found in the animations object
     this.setAnimationBackward = function (animationName) {
         if (animations[animationName]) animations[animationName][ANIM_DIRECTION] = false;
-        
+
         return this;
     };
 
@@ -339,7 +339,7 @@ function Animator () {
         this.frame = function () {return i_t;};
 
         // Returns frame information as a percentage from [0, 1]
-        this.percent = function () {return i_t / n;};
+        this.percent = function () {return 1 - i_t / n;};
 
         /**
          * Performs Runge-Kutta integration for a discrete value dt. Used for normalizing i in animation
@@ -364,7 +364,7 @@ function Animator () {
 
             var xf = x + K * (v1 + 2 * v2 + 2 * v3 + v4),
                 vf = v + K * (a1 + 2 * a2 + 2 * a3 + a4);
-            
+
             return [xf, vf];
         };
 
@@ -424,7 +424,7 @@ function BooleanTree (booleanStructure) {
         }
 
         return this;
-    };    
+    };
 
     // This removes a boolean from the boolean structure mapping if it already exists; it does nothing otherwise.
     this.remove = function (boolName) {
@@ -455,7 +455,7 @@ function BooleanTree (booleanStructure) {
             boolStruct[boolName].parents[parent] = parent.outputBoolean;
             boolStruct[boolName].outputBoolean = calculateOutputBool (boolName);
         }
-        
+
         return this;
     };
 
@@ -499,7 +499,7 @@ function BooleanTree (booleanStructure) {
             // Update the children's parent values
             for (var i = 0; i < boolStruct[boolName].children.length; i++) {
                 var child = boolStruct[boolName].children[i];
-                
+
                 boolStruct[child].parents[boolName] = boolStruct[boolName].outputBoolean;
                 boolStruct[child].outputBoolean = false;
             }
@@ -561,7 +561,7 @@ function BooleanTree (booleanStructure) {
                 parentTemp[parent] = calculateOutputBool (parent);
                 outputBool = outputBool && parentTemp[parent];
             }
-            
+
         }
 
         // Add the newly calculated output value and parent mapping to the boolean structure
