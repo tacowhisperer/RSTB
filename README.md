@@ -10,7 +10,7 @@ For now, the button simply removes the sidebar's visibility by toggling the `dis
 ![demo](https://raw.github.com/tacowhisperer/RSTB/master/store_images/screenshot.png)
 
 ## Incoming Features
-The next step in the button's development is adding a menu for toggling a new features that removes the button when toggling the sidebar would not make sense (is not taking up enough space of the screen). This new feature seemed too arbitrary to just add, so much care is being taken so that it is not imposed on users that want the button to be visible at all times. Stay tuned for more updates.
+The next step in the button's development is adding a menu for toggling a new features that removes the button when toggling the sidebar would not make sense (is not taking up enough space of the screen). This new feature seemed too arbitrary to just add, so much care is being taken so that it is not imposed on users that want the button to be visible at all times.
 
-## Why so much custom code when there's libraries to ease development?
-The first iteration of this extension indeed used jQuery, but Reddit already loads the library in the standard DOM, and it seemed redundant to load jQuery again in the extension's environment, so a lot of time went into removing that dependency from the extension, such as having a generic animator. A key item to highlight is that this project is more of an exercise than anything. This means that full commercial functionality and fully stable features are not a priority at the time of this writing. Everything released on the Chrome store has been tested, but cannot be guaranteed to not have some weird bug or some flaw. That being said, any bugs brought to my attention will be addressed as soon as possible.
+## Update
+The current version now has a working menu that toggles this new feature from the **Incoming Features**. A few more iterations of code development should make it fully complete. Design of the menu is loosely based on the toggle found in YouTube videos to disable video annotations.
