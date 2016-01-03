@@ -5,7 +5,7 @@
 }
 
 .rstbmenuoption {
-	background-color: #369;
+	background-color: #888;
 	border-radius: 5px;
 	color: white;
 	cursor: default;
@@ -13,6 +13,7 @@
 	line-height: 2em;
 	margin: 7px;
 	padding-left: 6px;
+    -webkit-user-select: none;
 }
 
 #rstbmenuspacer {
@@ -21,11 +22,12 @@
 #rstbmenusvgwrapper {
 	position: absolute;
 	top: 0;
+    -webkit-user-select: none;
 	z-index: -1;
 }
 
 #rstbmenudisplayabilitytogglebuttonnob {
-	background-color: rgb(125,95,95);
+	background: -webkit-radial-gradient(circle, rgb(230,230,230), rgb(250,250,250));
 	border-radius: 6px;
 	height: 1em;
 	left: 2px;
@@ -35,7 +37,7 @@
 }
 
 #rstbmenudisplayabilitytogglebuttonwrapper {
-	background-color: rgba(187,157,157,1);
+	background-color: rgba(207,127,157,1);
 	border: 1px solid rgb(40,40,40);
 	border-radius: 7px;
 	cursor: pointer;
