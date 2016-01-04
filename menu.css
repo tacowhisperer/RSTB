@@ -1,5 +1,10 @@
+#redditsidetogglebutton {
+    font-size: x-small !important;
+}
+
 #rstbmenudiv {
 	display: none;
+    font-size: x-small !important;
 	padding: 0;
 	position: fixed;
 }
@@ -9,6 +14,7 @@
 	border-radius: 5px !important;
 	color: white !important;
 	cursor: default;
+    font-size: 1em !important;
 	height: 2em !important;
 	line-height: 2em !important;
 	margin: 7px !important;
@@ -31,7 +37,7 @@
 	border-radius: 6px !important;
 	height: 1em !important;
 	left: 2px;
-	position: relative;
+	position: relative !important;
 	top: 1.25px !important;
 	width: 1em !important;
 }
