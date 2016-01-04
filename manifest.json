@@ -29,7 +29,7 @@
             "js": [
                 "scripts/objects.js",
                 "scripts/global_variables_and_functions.js",
-                "scripts/refactored_script.js"
+                "scripts/script.js"
             ],
 
             "css": [
