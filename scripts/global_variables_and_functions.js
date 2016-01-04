@@ -72,7 +72,7 @@ var BG_RGB             = [255, 255, 255],
     MENU_TD_TEXT        = 'Always Show Button: ',
     MENU_BG_DAY         = [243, 243, 243],
     MENU_STROKE_DAY     = [22, 22, 22],
-    MENU_BG_NIGHT       = [22, 22, 22],
+    MENU_BG_NIGHT       = [52, 52, 52],
     MENU_STROKE_NIGHT   = [243, 243, 243],
     MENU_STROKE_WIDTH   = 0.5,       MSW_UN = 'px',
     MENU_WIDTH          = 175,       MW_UN  = 'px',
@@ -81,7 +81,7 @@ var BG_RGB             = [255, 255, 255],
     MENU_ACTIVE_ALPHA   = 1,
     MENU_ARROW_HEIGHT   = 10,
     MENU_ARROW_HALF_LEN = 7.5,
-    MENU_FRAME_DURATION = 5,
+    MENU_FRAME_DURATION = 7,
     MHW                 = MENU_WIDTH / 2,
 
     // Easy-to-manipulate animation variables
@@ -110,14 +110,16 @@ var BG_RGB             = [255, 255, 255],
     txtBorder1 = borderAnim + txtRGBA1,
 
     // Animation object constructions
-    hoverAnimator   = new Animator (),
-    displayAnimator = new Animator (),
-    interpolTrans   = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
-    isAct           = false,
+    hoverAnimator    = new Animator (),
+    displayAnimator  = new Animator (),
+    interpolTrans    = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
+    linearTransform  = function (x) {return x;},
+    isAct            = false;
+
 
 
     // Initial CSS values for the button
-    buttonCSS = {
+var buttonCSS = {
         'background-color':    bgRGBA0,
         'border':              txtBorder0,
         'border-radius':       BORDER_RADIUS + BR_UN,
@@ -165,10 +167,12 @@ var BG_RGB             = [255, 255, 255],
         'padding': 0,
         'top': 0,
         'width': '100%'
-    },
+    };
+
+
 
     // Animation objects to be fed to the animators
-    txtAnimation = {
+var txtAnimation = {
         animationName:     TXT_ANIMATION,
         startValue:        [TXT_RGB[0], TXT_RGB[1], TXT_RGB[2], IDLE_ALPHA],
         endValue:          [TXT_RGB[0], TXT_RGB[1], TXT_RGB[2], ACTIVE_ALPHA],
@@ -192,12 +196,12 @@ var BG_RGB             = [255, 255, 255],
 
     rstbMenuBGAnimation = {
         animationName:     MENU_DISP_BG_ANIMATION,
-        startValue:        [207, 127, 157, ACTIVE_ALPHA],    // Ported straight from menu.css
-        endValue:          [127, 207, 157, ACTIVE_ALPHA],
+        startValue:        [187, 150, 150, ACTIVE_ALPHA],    // Ported straight from menu.css
+        endValue:          [70, 187, 70, ACTIVE_ALPHA],
         numFrames:         MENU_FRAME_DURATION,
         interpolator:      rgbaInterpolate,
         updater:           rstbDisplayabilityBGUpdate,
-        interpolTransform: interpolTrans,
+        interpolTransform: linearTransform,
         isActive:          isAct
     },
 
@@ -208,7 +212,7 @@ var BG_RGB             = [255, 255, 255],
         numFrames:         MENU_FRAME_DURATION,
         interpolator:      rgbaInterpolate,
         updater:           rstbDisplayabilityNobBGUpdate,
-        interpolTransform: interpolTrans,
+        interpolTransform: linearTransform,
         isActive:          isAct
     },
 
@@ -219,12 +223,12 @@ var BG_RGB             = [255, 255, 255],
         numFrames:         MENU_FRAME_DURATION,
         interpolator:      positionInterpolate,
         updater:           rstbDisplayabilityNobPosUpdate,
-        interpolTransform: interpolTrans,
+        interpolTransform: linearTransform,
         isActive:          isAct
-    },
+    };
 
     // Points that define the outline of the SVG for the RSTB Menu
-    menuSVGPoints = '0,' + MENU_ARROW_HEIGHT + ' ' +
+var menuSVGPoints = '0,' + MENU_ARROW_HEIGHT + ' ' +
                     (MHW - MENU_ARROW_HALF_LEN) + ',' + MENU_ARROW_HEIGHT + ' ' +
                     MHW + ',0 ' +
                     (MHW + MENU_ARROW_HALF_LEN) + ',' + MENU_ARROW_HEIGHT + ' ' +
@@ -249,7 +253,7 @@ var BG_RGB             = [255, 255, 255],
                                                     '</div>' +
                                                 '</div>';
 
-    LEFT_CLICK   = 1,
+var LEFT_CLICK   = 1,
     MIDDLE_CLICK = 2,
     RIGHT_CLICK  = 3;
 
@@ -694,5 +698,5 @@ function rstbDisplayabilityNobBGUpdate (rgba) {
 // Updater for the option button nob position animation
 function rstbDisplayabilityNobPosUpdate (pos) {
     // Placed inside of undefined check because of polling
-    if (el.rstbMenuDisplayabilityToggleButtonNob) el.rstbMenuDisplayabilityToggleButtonNob.style.left = pos;
+    if (el.rstbMenuDisplayabilityToggleButtonNob) el.rstbMenuDisplayabilityToggleButtonNob.style.left = pos + 'px';
 }

@@ -105,9 +105,7 @@ el.redditSideToggleButton.addEventListener ('mouseup', function (e) {
 
 
 el.rstbMenuLink.addEventListener ('mousedown', function (e) {
-    if (e.target == el.rstbMenuLink) {
-        displayRSTBMenu (e.clientX, e.clientY);
-    }
+    displayRSTBMenu (e.clientX, e.clientY);
 });
 
 el.rstbMenuDisplayabilityToggleButtonWrapper.addEventListener ('mousedown', toggleButtonDisplayability);
@@ -129,7 +127,7 @@ function toggleButtonDisplayability (calledFromInternal) {
         bT.makeFalse ('displayOptionAnimationNotInitialized');
     }
 
-    if (!calledFromInternal || !calledFromInternal[0]) bT.toggle ('buttonAlwaysDisplayed');
+    if (!arguments.length || !calledFromInternal[0]) bT.toggle ('buttonAlwaysDisplayed');
     if (bT.holdsTrue ('buttonAlwaysDisplayed')) {
         displayAnimator .setAnimationForward (MENU_DISP_BG_ANIMATION)
                         // .setAnimationForward (MENU_NOB_BG_ANIMATION)
