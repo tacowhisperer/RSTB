@@ -10,7 +10,7 @@ For now, the button simply removes the sidebar's visibility by toggling the `dis
 ![demo](https://raw.github.com/tacowhisperer/RSTB/master/store_images/screenshot.png)
 
 ## Incoming Features
-The next step in the button's development is adding a menu for toggling a new features that removes the button when toggling the sidebar would not make sense (is not taking up enough space of the screen). This new feature seemed too arbitrary to just add, so much care is being taken so that it is not imposed on users that want the button to be visible at all times.
+The next step in the button's development is adding a menu for toggling a new feature that removes the button when toggling the sidebar would not make sense (is not taking up enough space of the screen). This new feature seemed too arbitrary to just add, so a toggle-able option is being developed that allows users to choose whether they want it or not.
 
 ## Update
 The current version now has a working menu that toggles this new feature from the **Incoming Features**. A few more iterations of code development should make it fully complete. Design of the menu is loosely based on the toggle found in YouTube videos to disable video annotations.
