@@ -115,6 +115,7 @@ el.rstbMenuDisplayabilityToggleButtonWrapper.addEventListener ('mousedown', togg
 // Shows or hides the button based on the settings provided by the user
 window.addEventListener ('scroll', hideRSTBMenu);
 window.addEventListener ('resize', hideRSTBMenu);
+for (var i = 0; i < redditContentArray.length; i++) redditContentArray[i].addEventListener ('mousedown', hideRSTBMenu);
 if (redditListingChooser) redditListingChooser.addEventListener ('mousedown', hideRSTBMenu);
 
 window.addEventListener ('resize', executeButtonDisplayability);
@@ -151,7 +152,16 @@ pollForRES ();
 // Make sure that the button is visible if needed upon initialization if the user set it to hide
 setTimeout (executeButtonDisplayability, 0);
 
-// Finish initialization by reloading the settings from the previous page reload, if any
+// Reload the settings from the previous page reload, if any
 reloadSettingsFromLocalStorage (toggleSidebar, toggleButtonDisplayability);
 
+
+// Finish by logging the trademark on the console for pro users to admire (or not hehe)
+logRSTBLogo ();
+
 }
+
+// Link to the sad Dr. Who gif for anybody that uninstalls
+chrome.runtime.setUninstallURL ('http://i.imgur.com/5mk6id6.gifv', function () {
+    if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
+});

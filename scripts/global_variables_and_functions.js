@@ -75,7 +75,7 @@ var BG_RGB             = [255, 255, 255],
     MENU_BG_NIGHT       = [52, 52, 52],
     MENU_STROKE_NIGHT   = [243, 243, 243],
     MENU_STROKE_WIDTH   = 0.5,       MSW_UN = 'px',
-    MENU_WIDTH          = 157,       MW_UN  = 'px',
+    MENU_WIDTH          = 175,       MW_UN  = 'px',
     MENU_HEIGHT         = 45,        MH_UN  = 'px',
     MENU_IDLE_ALPHA     = 0,
     MENU_ACTIVE_ALPHA   = 1,
@@ -83,6 +83,7 @@ var BG_RGB             = [255, 255, 255],
     MENU_ARROW_HALF_LEN = 7.5,
     MENU_FRAME_DURATION = 7,
     MHW                 = MENU_WIDTH / 2,
+    MENU_OPT_DESCRIPTOR = 'When off, the button will hide&#xA;when the sidebar does not take&#xA;up too much screen space.',
 
     // Easy-to-manipulate animation variables
     TXT_ANIMATION   = 'Text Color Animation',
@@ -196,7 +197,7 @@ var txtAnimation = {
 
     rstbMenuBGAnimation = {
         animationName:     MENU_DISP_BG_ANIMATION,
-        startValue:        [187, 150, 150, ACTIVE_ALPHA],    // Ported straight from menu.css
+        startValue:        [150, 150, 150, ACTIVE_ALPHA],    // Ported straight from menu.css
         endValue:          [70, 187, 70, ACTIVE_ALPHA],
         numFrames:         MENU_FRAME_DURATION,
         interpolator:      rgbaInterpolate,
@@ -246,7 +247,9 @@ var menuSVGPoints = '0,' + MENU_ARROW_HEIGHT + ' ' +
                 '</svg></div>',
 
     rstbMenuSpacerHTML = '<div id="rstbmenuspacer"></div>',
-    rstbMenuDisplayabilityToggleOptionHTML  =   '<div id="rstbmenudisplayabilitytoggleoption" class="rstbmenuoption">' +
+
+    tl = ' title="' + MENU_OPT_DESCRIPTOR + '"',
+    rstbMenuDisplayabilityToggleOptionHTML  =   '<div id="rstbmenudisplayabilitytoggleoption" class="rstbmenuoption"' + tl + '>' +
                                                     MENU_TD_TEXT + '<div id="rstbmenudisplayabilitytogglebuttonwrapper">' +
                                                         '<div id="rstbmenudisplayabilitytogglebuttonnob">' +
                                                         '</div>' +
@@ -280,6 +283,7 @@ redditSCA = document.getElementsByClassName ('side'),
 redditHeader = document.getElementById ('header'),
 redditListingChooser = document.getElementsByClassName ('listing-chooser')[0],
 redditTabMenu = document.getElementsByClassName ('tabmenu')[0],
+redditContentArray = document.getElementsByClassName ('content');
 resNightSwitchToggle = document.getElementById ('nightSwitchToggle'),
 body = document.body;
 
@@ -560,9 +564,14 @@ var MAX_TIME_DELAY_MS = 250,
 function pollForRES () {
     if (Date.now () - timeAtPoll <= MAX_TIME_DELAY_MS) {
         resNightSwitchToggle = document.getElementById ('nightSwitchToggle');
+        resNightSwitchLi = resNightSwitchToggle? resNightSwitchToggle.parentNode : false;
         if (resNightSwitchToggle) {
             bT.makeTrue ('resIsInstalled');
             resNightSwitchToggle.className.match (/enabled$/i)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+
+            // Switch the color of the menu if the RES day/night button is clicked
+            if (resNightSwitchLi) resNightSwitchLi.addEventListener ('mouseup', updateMenuBGColor);
+            else resNightSwitchToggle.addEventListener ('mouseup', updateMenuBGColor);
         }
 
         else requestAnimationFrame (pollForRES);
@@ -570,6 +579,18 @@ function pollForRES () {
 
     else {
         document.URL.match (NIGHT_MODE_URL_RGX)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+    }
+
+    function updateMenuBGColor () {
+        setTimeout (function () {
+            resNightSwitchToggle.className.match (/enabled$/i)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+
+            var rgbaBG = 'rgba(' + (bT.holdsTrue ('isNightMode')? MENU_BG_NIGHT : MENU_BG_DAY) + ',' + ACTIVE_ALPHA + ')',
+                rgbaSt = 'rgba(' + (bT.holdsTrue ('isNightMode')? MENU_STROKE_NIGHT : MENU_STROKE_DAY) + ',' + ACTIVE_ALPHA + ')';
+
+            el.rstbMenuSVGPolygon.setAttribute ('fill', rgbaBG);
+            el.rstbMenuSVGPolygon.style.stroke = rgbaSt;
+        }, 0);
     }
 }
 
