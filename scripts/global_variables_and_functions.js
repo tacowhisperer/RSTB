@@ -81,7 +81,7 @@ var BG_RGB             = [255, 255, 255],
     MENU_ACTIVE_ALPHA   = 1,
     MENU_ARROW_HEIGHT   = 10,
     MENU_ARROW_HALF_LEN = 7.5,
-    MENU_FRAME_DURATION = 7,
+    // MENU_FRAME_DURATION = 7,
     MHW                 = MENU_WIDTH / 2,
     MENU_OPT_DESCRIPTOR = 'When off, the button will hide&#xA;when the sidebar does not take&#xA;up too much screen space.',
 
@@ -93,7 +93,7 @@ var BG_RGB             = [255, 255, 255],
     MENU_DISP_BG_ANIMATION = 'Displayability Background Animation',
     MENU_NOB_BG_ANIMATION  = 'Displayability Button Nob Background Animation',
     MENU_NOB_POSITION_ANIMATION = 'Displayability Button Nob Position Animation',
-    MENU_TOGGLE_FRAME_DUR  = 8,
+    MENU_TOGGLE_FRAME_DUR  = 15,
 
     // Ratio of side to body that will determine whether or not the button should appear
     SIDE_TO_BODY_RATIO = 0.342,
@@ -111,11 +111,11 @@ var BG_RGB             = [255, 255, 255],
     txtBorder1 = borderAnim + txtRGBA1,
 
     // Animation object constructions
-    hoverAnimator    = new Animator (),
-    displayAnimator  = new Animator (),
-    interpolTrans    = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
-    linearTransform  = function (x) {return x;},
-    isAct            = false;
+    hoverAnimator     = new Animator (),
+    displayAnimator   = new Animator (),
+    interpolTrans     = function (x) {return 0.5 * (1 - Math.cos (Math.PI * x));},
+    exponentialTrans  = function (x) {return (Math.pow (Math.E, -4 * x) - 1) / (Math.pow (Math.E, -4) - 1);},
+    isAct             = false;
 
 
 
@@ -199,10 +199,10 @@ var txtAnimation = {
         animationName:     MENU_DISP_BG_ANIMATION,
         startValue:        [150, 150, 150, ACTIVE_ALPHA],    // Ported straight from menu.css
         endValue:          [70, 187, 70, ACTIVE_ALPHA],
-        numFrames:         MENU_FRAME_DURATION,
+        numFrames:         MENU_TOGGLE_FRAME_DUR,
         interpolator:      rgbaInterpolate,
         updater:           rstbDisplayabilityBGUpdate,
-        interpolTransform: linearTransform,
+        interpolTransform: exponentialTrans,
         isActive:          isAct
     },
 
@@ -210,10 +210,10 @@ var txtAnimation = {
         animationName:     MENU_NOB_BG_ANIMATION,
         startValue:        [125, 95, 95, ACTIVE_ALPHA],      // Ported straight from menu.css
         endValue:          [95, 125, 95, ACTIVE_ALPHA],
-        numFrames:         MENU_FRAME_DURATION,
+        numFrames:         MENU_TOGGLE_FRAME_DUR,
         interpolator:      rgbaInterpolate,
         updater:           rstbDisplayabilityNobBGUpdate,
-        interpolTransform: linearTransform,
+        interpolTransform: exponentialTrans,
         isActive:          isAct
     },
 
@@ -221,10 +221,10 @@ var txtAnimation = {
         animationName:     MENU_NOB_POSITION_ANIMATION,
         startValue:        2,                                // Ported straight from menu.css
         endValue:          18,
-        numFrames:         MENU_FRAME_DURATION,
+        numFrames:         MENU_TOGGLE_FRAME_DUR,
         interpolator:      positionInterpolate,
         updater:           rstbDisplayabilityNobPosUpdate,
-        interpolTransform: linearTransform,
+        interpolTransform: exponentialTrans,
         isActive:          isAct
     };
 
@@ -565,16 +565,17 @@ function pollForRES () {
     if (Date.now () - timeAtPoll <= MAX_TIME_DELAY_MS) {
         resNightSwitchToggle = document.getElementById ('nightSwitchToggle');
         resNightSwitchLi = resNightSwitchToggle? resNightSwitchToggle.parentNode : false;
-        if (resNightSwitchToggle) {
-            bT.makeTrue ('resIsInstalled');
-            resNightSwitchToggle.className.match (/enabled$/i)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
 
-            // Switch the color of the menu if the RES day/night button is clicked
-            if (resNightSwitchLi) resNightSwitchLi.addEventListener ('mouseup', updateMenuBGColor);
-            else resNightSwitchToggle.addEventListener ('mouseup', updateMenuBGColor);
+        if (resNightSwitchToggle) enableRESSetting ();
+
+        // The new version of RES changed night switch names and HTML types
+        else {
+            resNightSwitchToggle = document.getElementById ('nightSwitchToggleContainer');
+            resNightSwitchLi = resNightSwitchToggle? resNightSwitchToggle.parentNode.parentNode : false;
+
+            if (resNightSwitchToggle) enableRESSetting ();
+            else requestAnimationFrame (pollForRES);
         }
-
-        else requestAnimationFrame (pollForRES);
     }
 
     else {
@@ -591,6 +592,15 @@ function pollForRES () {
             el.rstbMenuSVGPolygon.setAttribute ('fill', rgbaBG);
             el.rstbMenuSVGPolygon.style.stroke = rgbaSt;
         }, 0);
+    }
+
+    function enableRESSetting () {
+        bT.makeTrue ('resIsInstalled');
+        resNightSwitchToggle.className.match (/enabled$/i)? bT.makeTrue ('isNightMode') : bT.makeFalse ('isNightMode');
+
+        // Switch the color of the menu if the RES day/night button is clicked
+        if (resNightSwitchLi) resNightSwitchLi.addEventListener ('mouseup', updateMenuBGColor);
+        else resNightSwitchToggle.addEventListener ('mouseup', updateMenuBGColor);
     }
 }
 
