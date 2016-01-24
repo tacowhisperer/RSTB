@@ -160,8 +160,3 @@ reloadSettingsFromLocalStorage (toggleSidebar, toggleButtonDisplayability);
 logRSTBLogo ();
 
 }
-
-// Link to the sad Dr. Who gif for anybody that uninstalls
-chrome.runtime.setUninstallURL ('http://i.imgur.com/5mk6id6.gifv', function () {
-    if (chrome.runtime.lastError) console.error (chrome.runtime.lastError);
-});
