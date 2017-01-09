@@ -119,6 +119,10 @@ for (var i = 0; i < redditContentArray.length; i++) redditContentArray[i].addEve
 if (redditListingChooser) redditListingChooser.addEventListener ('mousedown', hideRSTBMenu);
 
 window.addEventListener ('resize', executeButtonDisplayability);
+window.addEventListener ('webkitfullscreenchange', function () {
+	bT.toggle ('screenIsFullScreen');
+	executeButtonDisplayability ();
+});
 
 function toggleButtonDisplayability (calledFromInternal) {
     if (bT.holdsTrue ('displayOptionAnimationNotInitialized')) {
