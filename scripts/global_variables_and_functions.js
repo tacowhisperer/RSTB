@@ -98,7 +98,7 @@ var BG_RGB             = [255, 255, 255],
     MENU_ARROW_HALF_LEN = 7.5,
     // MENU_FRAME_DURATION = 7,
     MHW                 = MENU_WIDTH / 2,
-    MENU_OPT_DESCRIPTOR = 'When off, the button will hide&#xA;when the sidebar does not take&#xA;up too much screen space.',
+    MENU_OPT_DESCRIPTOR = 'When off, the button will hide when the sidebar does not take up too much screen space.',
 
     // Easy-to-manipulate animation variables
     TXT_ANIMATION   = 'Text Color Animation',
@@ -253,32 +253,62 @@ var menuSVGPoints = '0,' + MENU_ARROW_HEIGHT + ' ' +
                     '0,' + MENU_HEIGHT,
 
     // HTML for the RSTB Menu
-    xml       = ' xmlns="http://www.w3.org/2000/svg"',
-    svgCode   = '<div id="rstbmenusvgwrapper"><svg width="'+ MENU_WIDTH + MW_UN + '" height="' + MENU_HEIGHT + MH_UN + '"' + xml +
-                  'stroke-linejoin="miter" id="rstbmenusvg">' +
-                    '<g>' +
-                        '<polygon points="' + menuSVGPoints + '" fill="rgba(0,0,0,0)" id="rstbmenusvgpolygon"/>' +
-                    '</g>' +
-                '</svg></div>',
+    xmlns = 'http://www.w3.org/2000/svg',
 
-    rstbMenuSpacerHTML = '<div id="rstbmenuspacer"></div>',
+    wrapperElement = document.createElement ('div'),
+    svgElement = document.createElementNS (xmlns, 'svg'),
+    polygonElement = document.createElementNS (xmlns, 'polygon'),
 
-    tl = ' title="' + MENU_OPT_DESCRIPTOR + '"',
-    rstbMenuDisplayabilityToggleOptionHTML  =   '<div id="rstbmenudisplayabilitytoggleoption" class="rstbmenuoption"' + tl + '>' +
-                                                    MENU_TD_TEXT + '<div id="rstbmenudisplayabilitytogglebuttonwrapper">' +
-                                                        '<div id="rstbmenudisplayabilitytogglebuttonnob">' +
-                                                        '</div>' +
-                                                    '</div>' +
-                                                '</div>';
+    spacerElement = document.createElement ('div'),
 
+    optionElement = document.createElement ('div'),
+    optionElementWrapper = document.createElement ('div'),
+    optionNobElement = document.createElement ('div'),
+    tdTextElement = document.createTextNode (MENU_TD_TEXT);
+
+// Assemble the svg menu elements
+wrapperElement.setAttribute ('id', 'rstbmenusvgwrapper');
+svgElement.setAttribute ('width', MENU_WIDTH + MW_UN);
+svgElement.setAttribute ('height', MENU_HEIGHT + MH_UN);
+svgElement.setAttribute ('stroke-linejoin', 'miter');
+svgElement.setAttribute ('id', 'rstbmenusvg');
+polygonElement.setAttribute ('points', menuSVGPoints);
+polygonElement.setAttribute ('fill', 'black');
+polygonElement.setAttribute ('id', 'rstbmenusvgpolygon');
+
+spacerElement.setAttribute ('id', 'rstbmenuspacer');
+
+optionElement.setAttribute ('id', 'rstbmenudisplayabilitytoggleoption');
+optionElement.setAttribute ('class', 'rstbmenuoption');
+optionElement.setAttribute ('title', MENU_OPT_DESCRIPTOR);
+optionElement.appendChild (tdTextElement);
+
+optionElementWrapper.setAttribute ('id', 'rstbmenudisplayabilitytogglebuttonwrapper');
+
+optionNobElement.setAttribute ('id', 'rstbmenudisplayabilitytogglebuttonnob');
+
+svgElement.appendChild (polygonElement);
+wrapperElement.appendChild (svgElement);
+
+
+optionElementWrapper.appendChild (optionNobElement);
+optionElement.appendChild (optionElementWrapper);
+
+// Variable aliasing for more understanding of what is going on in script.js
+var svgCodeElement = wrapperElement,
+    rstbMenuSpacerElement = spacerElement,
+    rstbMenuDisplayabilityToggleOptionElement = optionElement;
+
+
+
+// Used for identifying click codes
 var LEFT_CLICK   = 1,
     MIDDLE_CLICK = 2,
     RIGHT_CLICK  = 3;
 
 
 
-
-
+// Used for stylizing elements in a for loop rather than x individual times
 var rstbElements = [
         'redditSideToggleButton',
         'rstbMenuLink',
